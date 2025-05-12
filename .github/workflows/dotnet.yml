@@ -85,7 +85,7 @@ jobs:
       # The action does not output that, so we perform a dry run to get the tag without 'v'.
       - name: Get new tag without 'v' prefix
         id: StepTagNoV
-        uses: anothrNick/github-tag-action@1.71.0
+        uses: anothrNick/github-tag-action@1.73.0
         env:
           DRY_RUN: true
           DEFAULT_BUMP: none
@@ -275,7 +275,7 @@ jobs:
       # https://github.com/marketplace/actions/github-tag-bump
       - name: Bump version and push tag with 'v' prefix
         id: StepBump
-        uses: anothrNick/github-tag-action@1.71.0
+        uses: anothrNick/github-tag-action@1.73.0
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           DEFAULT_BUMP: none
