@@ -313,7 +313,7 @@ jobs:
       # https://github.com/marketplace/actions/create-release
       - name: Create release with artifact
         if: success() && needs.version.outputs.TagNoV && steps.StepBump.outputs.new_tag
-        uses: ncipollo/release-action@v1.16.0
+        uses: ncipollo/release-action@v1.18.0
         with:
           allowUpdates: false
           generateReleaseNotes: true
