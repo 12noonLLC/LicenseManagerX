@@ -1,10 +1,10 @@
-﻿# .github/workflows/Build.yml
+﻿# .github/workflows/build.yml
 # Build and Release workflow for License Manager X
 #
 # - Trigger on push to any branch, on version tags (e.g., v1.2.3), or on manual dispatch.
 # - If a version tag (e.g., v1.2.3) is pushed, create a GitHub release for that version if not already present.
-# - If the version tag is not on the 'master' branch, mark the GitHub release as 'draft'.
-# - Build and publish the NuGet package to NuGet.org only if the version tag is on the master branch.
+# - If the version tag is not on the 'main' branch, mark the GitHub release as 'draft'.
+# - Build and publish the NuGet package to NuGet.org only if the version tag is on the main branch.
 # - Manual dispatch builds the project but does not create a GitHub release or publish to NuGet.
 
 name: Build and Release License Manager X
@@ -20,7 +20,7 @@ on:
       - '**/*.md'
       - 'LICENSE'
   pull_request:
-    branches: [ master, yaml ]
+    branches: [ main, yaml ]
     paths-ignore:
       - '**/*.gitignore'
       - '**/*.gitattributes'
@@ -254,7 +254,7 @@ jobs:
         #if: ${{ always() }}
 
   #
-  # Production release must be on 'master' and the tag must begin with 'v'.
+  # Production release must be on 'main' and the tag must begin with 'v'.
   # If a release already exists, do not create the release.
   #
   # Manual dispatch must build but must not create a release.
@@ -266,19 +266,19 @@ jobs:
   # If this is a push elsewhere with a v1.2.3 tag, create a DRAFT release for GitHub and no NuGet release.
   #
   # RELEASE -- create tag and push it:
-  # If this is a push on `master` of a v1.2.3 tag, create a PRODUCTION release for GitHub and NuGet.
+  # If this is a push on `main` of a v1.2.3 tag, create a PRODUCTION release for GitHub and NuGet.
   #
   # •	Manual dispatch: Only the build job runs, no release is created.
   # •	Normal push (no tag): Only the build job runs, no release is created.
   # •	Tag push on other branch: Both build and release jobs run, draft release, no NuGet publish.
-  # •	Tag push on master: Both build and release jobs run, production release and NuGet publish.
+  # •	Tag push on main: Both build and release jobs run, production release and NuGet publish.
   #
-  # | Scenario         | Build | Release Job Runs | Release Type | NuGet Publish | Notes               |
-  # |------------------|-------|------------------|--------------|---------------|---------------------|
-  # | Normal (no tag)  | Yes   | No               | N/A          | No            | Only build          |
-  # | Manual dispatch  | Yes   | No               | N/A          | No            | Only build          |
-  # | Test (other br)  | Yes   | Yes              | Draft        | No            | Tag on other branch |
-  # | Release (master) | Yes   | Yes              | Production   | Yes           | Tag on master       |
+  # | Scenario        | Build | Release Job Runs | Release Type | NuGet Publish | Notes               |
+  # |-----------------|-------|------------------|--------------|---------------|---------------------|
+  # | Normal (no tag) | Yes   | No               | N/A          | No            | Only build          |
+  # | Manual dispatch | Yes   | No               | N/A          | No            | Only build          |
+  # | Test (other br) | Yes   | Yes              | Draft        | No            | Tag on other branch |
+  # | Release (main)  | Yes   | Yes              | Production   | Yes           | Tag on main         |
   #
   release:
     name: 🚀 Create release for GitHub Releases
@@ -324,8 +324,8 @@ jobs:
       - name: 🏷️ Get version tag and release name
         id: get_version
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/master" && "${GITHUB_REF_TYPE}" == "branch" ]]; then
-            # On master branch, use the latest tag if available
+          if [[ "${GITHUB_REF}" == "refs/heads/main" && "${GITHUB_REF_TYPE}" == "branch" ]]; then
+            # On main branch, use the latest tag if available
             tag="${{ steps.tag_sha.outputs.latest_tag }}"
             # -n : non-empty, -z : unset or empty
             if [[ -n "$tag" ]]; then
@@ -338,11 +338,11 @@ jobs:
             tag="${GITHUB_REF##*/}"
             name="${tag#v}"
           elif [[ -n "${{ steps.tag_sha.outputs.latest_tag }}" ]]; then
-            # Not on master, use latest tag and short SHA
+            # Not on main, use latest tag and short SHA
             tag="${{ steps.tag_sha.outputs.latest_tag }}"
             name="${tag#v}-${{ steps.tag_sha.outputs.short_sha }}"
           else
-            # Not on master, use short SHA
+            # Not on main, use short SHA
             tag=""
             name="${{ steps.tag_sha.outputs.short_sha }}"
           fi
@@ -350,15 +350,15 @@ jobs:
           echo "name=$name" >> $GITHUB_OUTPUT
 
       # If the workflow was inititated by pushing a tag,
-      # we need to know if it is on the 'master' branch.
-      - name: 🧪 Check if tag is on master
-        id: tag_on_master
+      # we need to know if it is on the 'main' branch.
+      - name: 🧪 Check if tag is on main
+        id: tag_on_main
         run: |
-          BASE_BRANCH=$(git branch -r --contains $GITHUB_SHA | grep 'master' || true)
+          BASE_BRANCH=$(git branch -r --contains $GITHUB_SHA | grep 'main' || true)
           if [[ -n "$BASE_BRANCH" ]]; then
-            echo "on_master=true" >> $GITHUB_OUTPUT
+            echo "on_main=true" >> $GITHUB_OUTPUT
           else
-            echo "on_master=false" >> $GITHUB_OUTPUT
+            echo "on_main=false" >> $GITHUB_OUTPUT
           fi
 
       # Create a release only if one does not already exist for this tag
@@ -390,9 +390,9 @@ jobs:
           #
           #files: ${{env.ARTIFACT_NAME}}.zip
           #
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_master.outputs.on_master == 'true') }}
-          draft: ${{ !(startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_master.outputs.on_master == 'true')) }}
-          #draft: ${{ (github.ref != 'refs/heads/master') || (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) }}
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
+          draft: ${{ !(startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')) }}
+          #draft: ${{ (github.ref != 'refs/heads/main') || (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) }}
           # There is also a `prerelease` property. (Example: if manual start, which implies no v tag)
           #prerelease: ${{ github.event_name == 'workflow_dispatch' }}
         env:
@@ -405,9 +405,9 @@ jobs:
           echo "Release name: ${{ steps.get_version.outputs.name }}"
 
       # https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package
-      # Publish NuGet package to nuget.org if this is a version tag on the master branch
+      # Publish NuGet package to nuget.org if this is a version tag on the main branch
       - name: 🚀 Publish NuGet package
-        if: startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_master.outputs.on_master == 'true')
+        if: startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.API_KEY_NUGET }}
         run: |
