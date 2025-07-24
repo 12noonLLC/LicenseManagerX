@@ -7,7 +7,7 @@
 # - Build and publish the NuGet package to NuGet.org only if the version tag is on the main branch.
 # - Manual dispatch builds the project but does not create a GitHub release or publish to NuGet.
 
-name: Build and Release License Manager X
+name: Build and Release
 
 on:
   push:
@@ -27,6 +27,10 @@ on:
       - '**/*.md'
       - 'LICENSE'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write  # 👈 lets skip-duplicate-actions cancel other runs
 
 env:
   # Path to the project files relative to the root of the project.
@@ -52,6 +56,7 @@ concurrency:
 # Jobs are run in parallel unless `needs` is specified.
 # https://docs.github.com/en/actions/learn-github-actions/managing-complex-workflows#creating-dependent-jobs
 jobs:
+  # https://github.com/marketplace/actions/skip-duplicate-actions
   precheck:
     name: 🧠 Check for redundant runs
     runs-on: ubuntu-latest
@@ -59,21 +64,20 @@ jobs:
       should_skip: ${{ steps.skip.outputs.should_skip }}
     steps:
       - id: skip
+        if: ${{ github.ref_type != 'tag' }}
         uses: fkirc/skip-duplicate-actions@v5.3.1
         with:
           paths_ignore: '[ "**/*.gitignore", "**/*.gitattributes", "**/*.md", "LICENSE" ]'
-          skip_after_successful_duplicate: 'false'
+          skip_after_successful_duplicate: 'true'
           concurrent_skipping: 'same_content_newer'
           cancel_others: 'true'
+          do_not_skip: '[ "push" ]'
 
   build:
-    name: 🏗 Build License Manager X and its components
+    name: 🏗 Build and test
     needs: precheck
     if: ${{ needs.precheck.outputs.should_skip != 'true' }}
     runs-on: windows-latest
-
-    permissions:
-      contents: write
 
     steps:
       - name: 🚫 Prevent rerun if skipped
@@ -90,16 +94,19 @@ jobs:
           echo "GITHUB_SHA: ${{ github.sha }}"
           echo "GITHUB_REF: ${{ github.ref }}"
           echo "GITHUB_REF_NAME: ${{ github.ref_name }}"
+          echo "GITHUB_REF_TYPE: ${{ github.ref_type }}"
+          #export GITHUB_REF_TYPE="${{ github.ref_type }}"
 
       # Reference the version with ${{ steps.extract_version.outputs.version }}
       - name: 🏷️ Extract version from tag
         id: extract_version
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         shell: pwsh
         run: |
-          Write-Host "GITHUB_REF: $env:GITHUB_REF"
           $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
           echo "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "GITHUB_REF: $env:GITHUB_REF"
+          echo "version=$version"
 
       - name: 🧾 Check out repository
         uses: actions/checkout@v4
@@ -140,12 +147,18 @@ jobs:
       # Build NuGet package for both .NET 8 and .NET 9
       - name: 🏗 Build NuGet package and main application
         run: |
-          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}}  --nologo --self-contained --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64 --framework net8.0
-          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}}  --nologo --self-contained --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64 --framework net9.0
-          dotnet build ${{env.PROJECT_APP_FILE_PATH}}     --nologo --self-contained --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64
+          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
+            --configuration ${{env.BUILD_CONFIGURATION}} `
+            --runtime win-x64 --framework net8.0
+          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
+            --configuration ${{env.BUILD_CONFIGURATION}} `
+            --runtime win-x64 --framework net9.0
+          dotnet build ${{env.PROJECT_APP_FILE_PATH}} --nologo --self-contained `
+            --configuration ${{env.BUILD_CONFIGURATION}} `
+            --runtime win-x64
 
       # https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test
-      # verbosity detailed
+      # verbosity detailed, minimal
       - name: 💯 Run unit tests
         run: |
           dotnet test ${{env.PROJECT_TESTS_FILE_PATH}} --nologo --verbosity normal --logger:"console;verbosity=normal" --configuration Release --runtime win-x64
@@ -159,14 +172,14 @@ jobs:
       # If not, we only want to build the client.
       #
       - name: 🧰 Pack NuGet package to `release` folder
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # pack => .\artifacts\package\release\LicenseManager_12noon.Client.1.2.3.4.nupkg
           # No need to use --include-symbols because it is specified in the project file.
           dotnet pack ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --no-restore --no-build --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64 --output ./release/
 
       - name: 🔍 Extract and inspect NuGet package
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # Use PowerShell syntax for variable handling
           #$packageName = "$env:NUGET_PACKAGE_NAME.$env:VERSION.nupkg"
@@ -189,7 +202,7 @@ jobs:
       # dotnet restore --verbosity detailed
       # Install local NuGet package and update Example application (optional, can be removed if not needed)
       - name: 🧩 Install local NuGet package and update Example application
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # Create local NuGet source
           dotnet new nugetconfig --force
@@ -214,7 +227,7 @@ jobs:
           Get-Content ${{env.PROJECT_EXAMPLE_FILE_PATH}}
 
       - name: 📋 Commit changes to Example Client
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
           # We are on a detached HEAD, so we have to check out the tagged branch in order to push the commit.
           git checkout ${{ steps.tag_branches.outputs.active_branch }}
@@ -250,8 +263,6 @@ jobs:
           name: ${{env.ARTIFACT_PACKAGE}}
           path: ./release/
           retention-days: 1
-        # Use always() to always run this step even when there are failures
-        #if: ${{ always() }}
 
   #
   # Production release must be on 'main' and the tag must begin with 'v'.
@@ -281,13 +292,10 @@ jobs:
   # | Release (main)  | Yes   | Yes              | Production   | Yes           | Tag on main         |
   #
   release:
-    name: 🚀 Create release for GitHub Releases
+    name: 🚀 Create GitHub release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
 
     steps:
       - name: 🧾 Check out repository
@@ -311,95 +319,92 @@ jobs:
         run: |
           zip ../${{env.ARTIFACT_NAME}}.zip *
 
-      - name: 🏷️ Get latest tag and short SHA
+      - name: 🏷️ Get short SHA of the tag
         id: tag_sha
         run: |
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           short_sha=$(git rev-parse --short HEAD)
-          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
           echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
-
-      # Determine the version/tag for the release
-      # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
-      - name: 🏷️ Get version tag and release name
-        id: get_version
-        run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/main" && "${GITHUB_REF_TYPE}" == "branch" ]]; then
-            # On main branch, use the latest tag if available
-            tag="${{ steps.tag_sha.outputs.latest_tag }}"
-            # -n : non-empty, -z : unset or empty
-            if [[ -n "$tag" ]]; then
-              name="${tag#v}"
-            else
-              name="${{ steps.tag_sha.outputs.short_sha }}"
-            fi
-          elif [[ "${GITHUB_REF}" == "refs/tags/v"* ]]; then
-            # On a version tag, use the tag
-            tag="${GITHUB_REF##*/}"
-            name="${tag#v}"
-          elif [[ -n "${{ steps.tag_sha.outputs.latest_tag }}" ]]; then
-            # Not on main, use latest tag and short SHA
-            tag="${{ steps.tag_sha.outputs.latest_tag }}"
-            name="${tag#v}-${{ steps.tag_sha.outputs.short_sha }}"
-          else
-            # Not on main, use short SHA
-            tag=""
-            name="${{ steps.tag_sha.outputs.short_sha }}"
-          fi
-          echo "tag=$tag" >> $GITHUB_OUTPUT
-          echo "name=$name" >> $GITHUB_OUTPUT
+          echo "short_sha=$short_sha"
 
       # If the workflow was inititated by pushing a tag,
       # we need to know if it is on the 'main' branch.
       - name: 🧪 Check if tag is on main
         id: tag_on_main
         run: |
+          # -n : non-empty, -z : unset or empty
           BASE_BRANCH=$(git branch -r --contains $GITHUB_SHA | grep 'main' || true)
           if [[ -n "$BASE_BRANCH" ]]; then
             echo "on_main=true" >> $GITHUB_OUTPUT
           else
             echo "on_main=false" >> $GITHUB_OUTPUT
           fi
+          echo "on_main=$on_main"
 
-      # Create a release only if one does not already exist for this tag
+      # Determine the version/tag for the release
+      # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
+      - name: 🏷️ Get version tag and release name
+        id: get_version
+        run: |
+          # Use the version tag
+          tag="${GITHUB_REF##*/}"   # e.g., refs/tags/v1.2.3 -> v1.2.3
+          name="${tag#v}"           # Remove 'v' prefix if present, e.g., v1.2.3 -> 1.2.3
+          # If not on `main` branch, append short SHA for test releases
+          if [[ "${{ steps.tag_on_main.outputs.on_main }}" != "true" ]]; then
+            name="${name}-${{ steps.tag_sha.outputs.short_sha }}"
+          fi
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "name=$name" >> $GITHUB_OUTPUT
+          echo "tag=$tag"
+          echo "name=$name"
+
+      # Create a release only if one does not already exist for this name.
+      # (We check the name instead of the tag because we
+      # might have multiple test releases for a version.)
       # https://github.com/marketplace/actions/github-script
-      - name: 🧪 Check if release exists
+      - name: 🧪 Check if release exists with the same name
         id: check_release
         uses: actions/github-script@v7
         with:
           script: |
-            const tag = '${{ steps.get_version.outputs.tag }}';
+            const name = '${{ steps.get_version.outputs.name }}';
             const { data: releases } = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
-            const exists = releases.some(r => r.tag_name === tag);
+            const exists = releases.some(r => r.name === name);
             return exists;
           result-encoding: string
 
       # https://github.com/marketplace/actions/gh-release
       - name: 🚀 Create GitHub Release
-        if: steps.check_release.outputs.result != 'true'
+        if: ${{ steps.check_release.outputs.result != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.tag }}
           name: ${{ steps.get_version.outputs.name }}
-          generate_release_notes: true
+          # tag on 'main' => latest
+          # else => draft
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
+          draft:     ${{ !(startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')) }}
+          #draft: ${{ (github.ref != 'refs/heads/main') || (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) }}
+          # There is also a `prerelease` property. (Example: if manual start, which implies no v tag)
+          #prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           #
           # Note: To encourage installations from the Microsoft Store, do not upload build targets.
           #
           #files: ${{env.ARTIFACT_NAME}}.zip
           #
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
-          draft: ${{ !(startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')) }}
-          #draft: ${{ (github.ref != 'refs/heads/main') || (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) }}
-          # There is also a `prerelease` property. (Example: if manual start, which implies no v tag)
-          #prerelease: ${{ github.event_name == 'workflow_dispatch' }}
+          generate_release_notes: true
+          append_body: true
+          body: |
+            <a href="https://apps.microsoft.com/detail/9PFBGG44SHLM?referrer=appbadge&mode=direct">
+              <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+            </a>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🗒️ Output release info
-        if: steps.check_release.outputs.result != 'true'
+        if: ${{ steps.check_release.outputs.result != 'true' }}
         run: |
           echo "Release created for tag: ${{ steps.get_version.outputs.tag }}"
           echo "Release name: ${{ steps.get_version.outputs.name }}"
@@ -407,7 +412,7 @@ jobs:
       # https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package
       # Publish NuGet package to nuget.org if this is a version tag on the main branch
       - name: 🚀 Publish NuGet package
-        if: startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.API_KEY_NUGET }}
         run: |
@@ -422,37 +427,17 @@ jobs:
           #dotnet nuget push ./release/*.snupkg --api-key ${{secrets.TOKEN_PACKAGES}} --source https://nuget.pkg.github.com/${{github.repository_owner}}/index.json --skip-duplicate
 
   #
-  # TODO We probably do not need the 'cleanupA' job.
   # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/using-conditions-to-control-job-execution
   # "A job that is skipped will report its status as "Success"."
   # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-jobs-in-a-workflow
   # "If a job fails or is skipped, all jobs that need it are skipped unless
   #  the jobs use a conditional expression that causes the job to continue."
   #
-  # If we use a single job that runs after 'build' and 'release', it will not run if 'release' does not run.
-  # If we use a single job that depends on 'build', it will run before 'release' downloads the artifact.
-  #
-  # Run if the 'build' job runs AND the 'release' job will not run.
-  cleanupA:
-    name: 🧹 Clean up artifacts
-    needs: [build]
-    runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-    steps:
-      # Delete publish artifact so it does not count against storage
-      # https://github.com/marketplace/actions/delete-artifact
-      - name: ❌ Delete build artifact
-        uses: GeekyEggo/delete-artifact@v5
-        with:
-          name: ${{ env.ARTIFACT_PACKAGE }}
-          failOnError: false
-
-  # Run if the 'release' job runs.
-  cleanupB:
+  cleanup:
     name: 🧹 Clean up artifacts
     needs: [release]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() }}
     steps:
       # Delete publish artifact so it does not count against storage
       # https://github.com/marketplace/actions/delete-artifact
