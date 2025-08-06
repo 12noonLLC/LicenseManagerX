@@ -71,7 +71,7 @@ jobs:
           skip_after_successful_duplicate: 'true'
           concurrent_skipping: 'same_content_newer'
           cancel_others: 'true'
-          do_not_skip: '[ "push" ]'
+          do_not_skip: '[ "push", "workflow_dispatch", "pull_request" ]'
 
   build:
     name: 🏗 Build and test
@@ -223,7 +223,10 @@ jobs:
 
       - name: 🏗️ Build Example Client application
         run: |
-          dotnet build ${{env.PROJECT_EXAMPLE_FILE_PATH}} --nologo --self-contained --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64
+          dotnet build ${{env.PROJECT_EXAMPLE_FILE_PATH}} --nologo `
+            --configuration ${{env.BUILD_CONFIGURATION}} `
+            --self-contained `
+            --runtime win-x64
           Get-Content ${{env.PROJECT_EXAMPLE_FILE_PATH}}
 
       - name: 📋 Commit changes to Example Client
@@ -242,7 +245,7 @@ jobs:
       # NUGET PACKAGE END
       #
 
-      # Publish to sibling `release` folder for github-tag-action step.
+      # Publish to sibling `release` folder.
       - name: 📁 Publish app to release folder
         run: |
           # Build single-file deployment
@@ -419,7 +422,10 @@ jobs:
           # NuGet.org
           # --skip-duplicate prevents an error if this package version already exists.
           # It cannot overwrite an existing package with the same version.
-          dotnet nuget push ./release/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push ./release/*.nupkg `
+            --source "https://api.nuget.org/v3/index.json" `
+            --api-key $NUGET_AUTH_TOKEN `
+            --skip-duplicate
           # Pushing the .nupkg file automatically pushes the associated .snupkg file.
           #dotnet nuget push ./release/*.snupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate
           #WHY? GitHub Packages
