@@ -363,7 +363,7 @@ jobs:
       # https://github.com/marketplace/actions/github-script
       - name: 🧪 Check if release exists with the same name
         id: check_release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const name = '${{ steps.get_version.outputs.name }}';
