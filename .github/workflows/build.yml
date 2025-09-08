@@ -131,7 +131,7 @@ jobs:
           echo "ACTIVE_BRANCH=$ACTIVE_BRANCH"
 
       - name: 🛠️ Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           # The NuGet package supports both .NET 9 and 8.
           # setup-dotnet will handle installing both SDKs.
