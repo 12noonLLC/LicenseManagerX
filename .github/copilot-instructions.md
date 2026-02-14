@@ -11,6 +11,8 @@ License Manager X is a .NET-based license management application for creating an
 
 The project uses the Standard.Licensing library for cryptographic license generation and validation.
 
+**Platform Requirements**: This project targets Windows (win-x64) due to WPF and Windows-specific components. Build and test commands require a Windows environment.
+
 ## Build and Test Commands
 
 ### Build
