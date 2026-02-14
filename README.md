@@ -303,3 +303,14 @@ should keep the license file.
 
 The **LicenseManagerX_Example** project is an example application to demonstrate how to
 use the NuGet client library to validate a license and access the license's information.
+
+## NuGet Package Signing
+
+For information about implementing NuGet package signing to enhance security and build trust with package consumers, see [NUGET_SIGNING.md](NUGET_SIGNING.md).
+
+This document covers:
+- Security benefits of package signing
+- Advantages and considerations
+- Step-by-step implementation guide
+- CI/CD integration with GitHub Actions
+- Certificate management best practices
