@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RootNamespace>LicenseManager_12noon</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Title>12noon License Manager X Licensing For Applications</Title>
-    <Description>This NuGet package enables a .NET application to use a simplified API for validating a license. It is an optional companion to the 12noon License Manager X application which is forked from the Standard.Licensing project and fixes some of its issues.</Description>
+    <Description>This NuGet package enables a .NET application to use a simplified API for validating a license. It is forked from the Standard.Licensing project and fixes some of its issues. It is also an optional companion to the 12noon License Manager X application.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>lock.png</PackageIcon>
     <PackageProjectUrl>https://12noon.com</PackageProjectUrl>
@@ -17,10 +18,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>LicenseManager_12noon.Client</PackageId>
     <Authors>$(Company)</Authors>
-    <Platforms>x64</Platforms>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageReleaseNotes>Note: This NuGet package will probably be renamed in the near future. Please see the GitHub repository for more information.</PackageReleaseNotes>
+    <PackageReleaseNotes>This NuGet package supports .NET 10, .NET 9, and .NET 8. Please see the GitHub repository for more information.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0|x64'">

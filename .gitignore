@@ -47,6 +47,7 @@ Desktop.ini
 project.lock.json
 project.fragment.lock.json
 artifacts/
+.runsettings
 
 #
 # Project-specific
@@ -55,3 +56,4 @@ Directory.Build.Props
 LicenseManager_12noon.Package/Package.StoreAssociation.xml
 LicenseManager_12noon.Package/Screenshots/
 IMAGES/
+devtools/*.zip

@@ -133,9 +133,12 @@ jobs:
       - name: 🛠️ Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          # The NuGet package supports both .NET 9 and 8.
-          # setup-dotnet will handle installing both SDKs.
-          dotnet-version: '9.0.x'
+          # The NuGet package supports .NET 8, 9, and 10.
+          # setup-dotnet will handle installing all required SDKs.
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
           dotnet-quality: ga
 
       # Work around https://github.com/actions/setup-dotnet/issues/155
@@ -144,7 +147,7 @@ jobs:
           dotnet clean --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64
           dotnet nuget locals all --clear
 
-      # Build NuGet package for both .NET 8 and .NET 9
+      # Build NuGet package for .NET 8, 9, and 10
       - name: 🏗 Build NuGet package and main application
         run: |
           dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
@@ -153,16 +156,19 @@ jobs:
           dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
             --configuration ${{env.BUILD_CONFIGURATION}} `
             --runtime win-x64 --framework net9.0
+          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
+            --configuration ${{env.BUILD_CONFIGURATION}} `
+            --runtime win-x64 --framework net10.0
           dotnet build ${{env.PROJECT_APP_FILE_PATH}} --nologo --self-contained `
             --configuration ${{env.BUILD_CONFIGURATION}} `
             --runtime win-x64
 
       # https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test
-      # verbosity detailed, minimal
+      # https://learn.microsoft.com/en-us/dotnet/core/testing/microsoft-testing-platform-intro
       - name: 💯 Run unit tests
         run: |
-          dotnet test ${{env.PROJECT_TESTS_FILE_PATH}} --nologo --verbosity normal --logger:"console;verbosity=normal" --configuration Release --runtime win-x64
-          dotnet test ${{env.PROJECT_TESTS_FILE_PATH}} --nologo --verbosity normal --logger:"console;verbosity=normal" --configuration Debug   --runtime win-x64
+          dotnet test --project ${{env.PROJECT_TESTS_FILE_PATH}} --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Release
+          dotnet test --project ${{env.PROJECT_TESTS_FILE_PATH}} --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Debug
 
       #
       # NUGET PACKAGE
@@ -338,10 +344,11 @@ jobs:
           BASE_BRANCH=$(git branch -r --contains $GITHUB_SHA | grep 'main' || true)
           if [[ -n "$BASE_BRANCH" ]]; then
             echo "on_main=true" >> $GITHUB_OUTPUT
+            echo "on_main=true"
           else
             echo "on_main=false" >> $GITHUB_OUTPUT
+            echo "on_main=false"
           fi
-          echo "on_main=$on_main"
 
       # Determine the version/tag for the release
       # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
@@ -422,9 +429,9 @@ jobs:
           # NuGet.org
           # --skip-duplicate prevents an error if this package version already exists.
           # It cannot overwrite an existing package with the same version.
-          dotnet nuget push ./release/*.nupkg `
-            --source "https://api.nuget.org/v3/index.json" `
-            --api-key $NUGET_AUTH_TOKEN `
+          dotnet nuget push ./release/*.nupkg \
+            --source "https://api.nuget.org/v3/index.json" \
+            --api-key "$NUGET_AUTH_TOKEN" \
             --skip-duplicate
           # Pushing the .nupkg file automatically pushes the associated .snupkg file.
           #dotnet nuget push ./release/*.snupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate

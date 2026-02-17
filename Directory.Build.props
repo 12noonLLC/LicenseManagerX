@@ -1,7 +1,8 @@
 <Project>
+
 	<PropertyGroup>
 		<Company>12noon LLC</Company>
-		<Copyright>(c) 2024-2025 12noon LLC</Copyright>
+		<Copyright>(c) 2024-2026 12noon LLC</Copyright>
 		<Product>12noon License Manager X</Product>
 		<Version>2.3.6</Version>
 		<VersionPrefix>2.3.6</VersionPrefix>
@@ -9,4 +10,24 @@
 		<FileVersion>2.3.6.0</FileVersion>
 		<AssemblyVersion>2.3.6</AssemblyVersion>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<!--
+			dotnet build
+			dotnet test
+			dotnet publish
+			dotnet msbuild
+			msbuild MySolution.slnx
+			msbuild MyProject.csproj
+			MSBuild does not work if only a project is specified.
+			These are still issues with .slnx files.
+			<ArtifactsPath>C:\VSIntermediate\$(SolutionName)\artifacts\</ArtifactsPath>
+
+			No need to use $(MSBuildProjectName) because VS creates subfolders in obj\ and bin\.
+		-->
+
+		<ArtifactsPath>C:\VSIntermediate\LicenseManagerX\artifacts\</ArtifactsPath>
+		<BaseIntermediateOutputPath>$(ArtifactsPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+	</PropertyGroup>
+
 </Project>

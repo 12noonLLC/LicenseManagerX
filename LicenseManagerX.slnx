@@ -1,0 +1,34 @@
+<Solution>
+  <Configurations>
+    <Configuration Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".github/workflows/build.yml" />
+    <File Path="devtools/PublishProjects.cmd" />
+    <File Path="Directory.Build.props" />
+    <File Path="LICENSE" />
+    <File Path="LicenseManagerX.png" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="LicenseManagerX.Console/LicenseManagerX.Console.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="LicenseManagerX.Package/LicenseManagerX.Package.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
+    <Build Project="false" />
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="LicenseManagerX/LicenseManagerX.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="LicenseManagerX_Example/LicenseManagerX_Example.csproj">
+    <BuildDependency Project="LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj" />
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

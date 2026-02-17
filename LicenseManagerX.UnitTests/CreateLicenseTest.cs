@@ -7,9 +7,7 @@ namespace LicenseManagerX.UnitTests;
 [TestClass]
 public class CreateLicenseTest
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-	private static TestContext _testContext;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+	public TestContext TestContext { get; private set; }
 
 	private static string PathTestFolder = string.Empty;
 
@@ -19,8 +17,6 @@ public class CreateLicenseTest
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		_testContext = testContext;
-
 		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 	}
 
@@ -32,8 +28,8 @@ public class CreateLicenseTest
 	[TestInitialize]
 	public void TestSetup()
 	{
-		PathLicenseFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManagerX.LicenseManager.FileExtension_License);
-		PathKeypairFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManagerX.LicenseManager.FileExtension_PrivateKey);
+		PathLicenseFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManagerX.LicenseManager.FileExtension_License);
+		PathKeypairFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManagerX.LicenseManager.FileExtension_PrivateKey);
 	}
 
 	[TestCleanup]
@@ -51,7 +47,7 @@ public class CreateLicenseTest
 		LicenseManagerX.LicenseManager manager = new();
 
 		// Create keypair -- error no passphrase
-		Assert.ThrowsException<ArgumentException>(() => manager.CreateKeypair());
+		Assert.ThrowsExactly<ArgumentException>(() => manager.CreateKeypair());
 
 		// Create keypair
 		manager.Passphrase = "This is a new random passphrase.";
@@ -152,49 +148,49 @@ public class CreateLicenseTest
 
 		string s = manager.Passphrase;
 		manager.Passphrase = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Passphrase = s;
 		s = manager.KeyPublic;
 		manager.KeyPublic = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.KeyPublic = s;
 
 		Guid g = manager.Id;
 		manager.Id = Guid.Empty;
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Id = g;
 		s = manager.ProductId;
 		manager.ProductId = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.ProductId = s;
 		s = manager.Product;
 		manager.Product = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Product = s;
 		s = manager.Version;
 		manager.Version = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Version = s;
 
 		// Quantity is not specified
 		manager.Quantity = 0;
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Quantity = -1;
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Quantity = 1;
 
 		// Expiration days is invalid
 		manager.ExpirationDays = -1;
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.ExpirationDays = 0;
 
 		s = manager.Name;
 		manager.Name = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Name = s;
 		s = manager.Email;
 		manager.Email = string.Empty;
-		Assert.ThrowsException<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentException>(() => manager.SaveLicenseFile(PathLicenseFile));
 		manager.Email = s;
 
 		return manager;
@@ -356,10 +352,10 @@ public class CreateLicenseTest
 	public void TestMismatchedAssemblyIdentity()
 	{
 		// Create a file to act as the assembly file.
-		string pathAssemblyFileGood = Path.Combine(PathTestFolder, _testContext.TestName + "Good.txt");
+		string pathAssemblyFileGood = Path.Combine(PathTestFolder, TestContext.TestName + "Good.txt");
 		File.WriteAllText(pathAssemblyFileGood, @"Tempor sanctus et. Accusam nonumy labore dolor takimata nibh stet sit qui duo vero.");
 
-		string pathAssemblyFileBad = Path.Combine(PathTestFolder, _testContext.TestName + "Bad.txt");
+		string pathAssemblyFileBad = Path.Combine(PathTestFolder, TestContext.TestName + "Bad.txt");
 		File.WriteAllText(pathAssemblyFileBad, @"Nonumy consectetuer et justo veniam. At stet est.");
 
 		// Create keypair
@@ -534,7 +530,7 @@ public class CreateLicenseTest
 		/// Act
 		/// Assert
 		/// Create license
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
+		Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => manager.SaveLicenseFile(PathLicenseFile));
 	}
 
 	[TestMethod]

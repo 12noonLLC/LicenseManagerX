@@ -8,9 +8,7 @@ namespace LicenseManagerX.UnitTests;
 [TestClass]
 public class CliArgumentParserTest
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-	private static TestContext _testContext;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+	public TestContext TestContext { get; private set; }
 
 	private static string PathTestFolder = string.Empty;
 
@@ -20,12 +18,10 @@ public class CliArgumentParserTest
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		_testContext = testContext;
-
 		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 	}
 
-	[ClassCleanup(ClassCleanupBehavior.EndOfClass)]
+	[ClassCleanup]
 	public static void ClassTeardown()
 	{
 	}
@@ -33,8 +29,8 @@ public class CliArgumentParserTest
 	[TestInitialize]
 	public void TestSetup()
 	{
-		PathLicenseFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManager.FileExtension_License);
-		PathKeypairFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManager.FileExtension_PrivateKey);
+		PathLicenseFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_License);
+		PathKeypairFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_PrivateKey);
 	}
 
 	[TestCleanup]
@@ -164,7 +160,7 @@ public class CliArgumentParserTest
 		string[] args = ["--private", "test.private", "--license", "test.lic", "--type", "Invalid"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
 	}
 
 	[TestMethod]
@@ -174,7 +170,7 @@ public class CliArgumentParserTest
 		string[] args = ["--private", "test.private", "--license", "test.lic", "--quantity", "0"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
 	}
 
 	[TestMethod]
@@ -184,7 +180,7 @@ public class CliArgumentParserTest
 		string[] args = ["--private", "test.private", "--license", "test.lic", "--expiration-days", "-1"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
 	}
 
 	[TestMethod]
@@ -194,7 +190,7 @@ public class CliArgumentParserTest
 		string[] args = ["--private"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
 	}
 
 	[TestMethod]
@@ -204,7 +200,7 @@ public class CliArgumentParserTest
 		string[] args = ["--unknown", "value"];
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
 	}
 
 	[TestMethod]
@@ -217,7 +213,7 @@ public class CliArgumentParserTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => parser.Validate());
+		Assert.ThrowsExactly<ArgumentException>(() => parser.Validate());
 	}
 
 	[TestMethod]
@@ -230,7 +226,7 @@ public class CliArgumentParserTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<FileNotFoundException>(parser.Validate);
+		Assert.ThrowsExactly<FileNotFoundException>(parser.Validate);
 	}
 
 	[TestMethod]
@@ -246,7 +242,7 @@ public class CliArgumentParserTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<FileNotFoundException>(parser.Validate);
+		Assert.ThrowsExactly<FileNotFoundException>(parser.Validate);
 	}
 
 	[TestMethod]
@@ -455,7 +451,7 @@ public class CliArgumentParserTest
 		var result = CliArgumentParser.Parse(args);
 
 		// Assert
-		Assert.AreEqual(3, result.ProductFeatures.Count);
+		Assert.HasCount(3, result.ProductFeatures);
 		Assert.AreEqual("Blue", result.ProductFeatures["Color"]);
 		Assert.AreEqual("Heron", result.ProductFeatures["Bird"]);
 		Assert.AreEqual("Pro", result.ProductFeatures["Edition"]);
@@ -471,7 +467,7 @@ public class CliArgumentParserTest
 		var result = CliArgumentParser.Parse(args);
 
 		// Assert
-		Assert.AreEqual(3, result.LicenseAttributes.Count);
+		Assert.HasCount(3, result.LicenseAttributes);
 		Assert.AreEqual("Large", result.LicenseAttributes["Size"]);
 		Assert.AreEqual("Engineering", result.LicenseAttributes["Department"]);
 		Assert.AreEqual("Seattle", result.LicenseAttributes["Location"]);
@@ -487,7 +483,7 @@ public class CliArgumentParserTest
 		var result = CliArgumentParser.Parse(args);
 
 		// Assert
-		Assert.AreEqual(3, result.ProductFeatures.Count);
+		Assert.HasCount(3, result.ProductFeatures);
 		Assert.AreEqual(string.Empty, result.ProductFeatures["Key1"]);
 		Assert.AreEqual("Value", result.ProductFeatures["Key2"]);
 		Assert.AreEqual(string.Empty, result.ProductFeatures["EmptyValue"]);
@@ -503,7 +499,7 @@ public class CliArgumentParserTest
 		var result = CliArgumentParser.Parse(args);
 
 		// Assert
-		Assert.AreEqual(3, result.ProductFeatures.Count);
+		Assert.HasCount(3, result.ProductFeatures);
 		Assert.AreEqual(string.Empty, result.ProductFeatures["Key1"]);
 		Assert.AreEqual("Value", result.ProductFeatures["Key2"]);
 		Assert.AreEqual(string.Empty, result.ProductFeatures["EmptyValue"]);
@@ -516,8 +512,8 @@ public class CliArgumentParserTest
 		string[] args = ["--private", "test.private", "--license", "test.lic", "--product-features", "=Value"];
 
 		// Act & Assert
-		var exception = Assert.ThrowsException<ArgumentException>(() => CliArgumentParser.Parse(args));
-		Assert.IsTrue(exception.Message.Contains("Expected key=value format"));
+		var exception = Assert.ThrowsExactly<ArgumentException>(() => CliArgumentParser.Parse(args));
+		Assert.Contains("Expected key=value format", exception.Message);
 	}
 
 	[TestMethod]
@@ -535,8 +531,8 @@ public class CliArgumentParserTest
 		File.WriteAllText(parser.PrivateFilePath, "Private file");
 
 		// Act & Assert
-		var exception = Assert.ThrowsException<ArgumentException>(() => parser.Validate());
-		Assert.IsTrue(exception.Message.Contains("reserved product feature name"));
+		var exception = Assert.ThrowsExactly<ArgumentException>(() => parser.Validate());
+		Assert.Contains("reserved product feature name", exception.Message);
 	}
 
 	[TestMethod]
@@ -554,8 +550,8 @@ public class CliArgumentParserTest
 		File.WriteAllText(parser.PrivateFilePath, "Private file");
 
 		// Act & Assert
-		var exception = Assert.ThrowsException<ArgumentException>(() => parser.Validate());
-		Assert.IsTrue(exception.Message.Contains("reserved license attribute name"));
+		var exception = Assert.ThrowsExactly<ArgumentException>(() => parser.Validate());
+		Assert.Contains("reserved license attribute name", exception.Message);
 	}
 
 	[TestMethod]
@@ -591,7 +587,7 @@ public class CliArgumentParserTest
 		parser.ApplyOverrides(manager);
 
 		// Assert
-		Assert.AreEqual(3, manager.ProductFeatures.Count);
+		Assert.HasCount(3, manager.ProductFeatures);
 		Assert.AreEqual("ExistingValue", manager.ProductFeatures["ExistingFeature"]);
 		Assert.AreEqual("Blue", manager.ProductFeatures["Color"]);
 		Assert.AreEqual("Pro", manager.ProductFeatures["Edition"]);
@@ -612,7 +608,7 @@ public class CliArgumentParserTest
 		parser.ApplyOverrides(manager);
 
 		// Assert
-		Assert.AreEqual(3, manager.LicenseAttributes.Count);
+		Assert.HasCount(3, manager.LicenseAttributes);
 		Assert.AreEqual("ExistingValue", manager.LicenseAttributes["ExistingAttr"]);
 		Assert.AreEqual("Large", manager.LicenseAttributes["Size"]);
 		Assert.AreEqual("Engineering", manager.LicenseAttributes["Department"]);
@@ -636,10 +632,10 @@ public class CliArgumentParserTest
 
 		// Assert
 		Assert.AreEqual("C:\\MyApp\\MyApp.exe", result.LockPath);
-		Assert.AreEqual(2, result.ProductFeatures.Count);
+		Assert.HasCount(2, result.ProductFeatures);
 		Assert.AreEqual("Blue", result.ProductFeatures["Color"]);
 		Assert.AreEqual("Pro", result.ProductFeatures["Edition"]);
-		Assert.AreEqual(2, result.LicenseAttributes.Count);
+		Assert.HasCount(2, result.LicenseAttributes);
 		Assert.AreEqual("Large", result.LicenseAttributes["Size"]);
 		Assert.AreEqual("Engineering", result.LicenseAttributes["Department"]);
 	}
@@ -690,7 +686,7 @@ public class CliArgumentParserTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(parser.Validate);
+		Assert.ThrowsExactly<ArgumentException>(parser.Validate);
 	}
 
 	[TestMethod]

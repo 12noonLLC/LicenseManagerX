@@ -7,31 +7,30 @@ namespace LicenseManagerX.UnitTests;
 [TestClass]
 public class LicenseAttributesTest
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-	private static TestContext _testContext;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+	public TestContext TestContext { get; private set; }
+
 	private static string PathTestFolder = string.Empty;
+
 	private string PathLicenseFile = string.Empty;
 	private string PathKeypairFile = string.Empty;
 
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		_testContext = testContext;
 		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 	}
 
 	[TestInitialize]
 	public void TestSetup()
 	{
-		PathLicenseFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManager.FileExtension_License);
-		PathKeypairFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManager.FileExtension_PrivateKey);
+		PathLicenseFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_License);
+		PathKeypairFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_PrivateKey);
 	}
 
 	/// <summary>
 	/// Creates a license manager with valid settings for testing.
 	/// </summary>
-	private LicenseManager CreateLicenseManagerWithValidSettings()
+	private static LicenseManager CreateLicenseManagerWithValidSettings()
 	{
 		LicenseManager manager = new();
 
@@ -95,7 +94,7 @@ public class LicenseAttributesTest
 		newManager.LoadKeypair(PathKeypairFile);
 
 		// Assert
-		Assert.AreEqual(attributes.Count, newManager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(attributes.Count, newManager.LicenseAttributes, "License attributes count should match");
 		foreach (var attribute in attributes)
 		{
 			Assert.IsTrue(newManager.LicenseAttributes.ContainsKey(attribute.Key), $"Attribute '{attribute.Key}' should exist");
@@ -131,7 +130,7 @@ public class LicenseAttributesTest
 
 		// Assert
 		Assert.IsTrue(isValid, $"License should be valid. Errors: {messages}");
-		Assert.AreEqual(attributes.Count, newManager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(attributes.Count, newManager.LicenseAttributes, "License attributes count should match");
 		foreach (var attribute in attributes)
 		{
 			Assert.IsTrue(newManager.LicenseAttributes.ContainsKey(attribute.Key), $"Attribute '{attribute.Key}' should exist");
@@ -186,7 +185,7 @@ public class LicenseAttributesTest
 		// Assert
 		Assert.IsTrue(isValid, $"License should be valid. Errors: {messages}");
 		Assert.IsFalse(licenseFile.HasLicenseAttribute("NonExistentAttribute"), "Should return false for non-existent attribute");
-		Assert.ThrowsException<ArgumentException>(() => licenseFile.GetLicenseAttribute("NonExistentAttribute"),
+		Assert.ThrowsExactly<ArgumentException>(() => licenseFile.GetLicenseAttribute("NonExistentAttribute"),
 			  "Should throw ArgumentException for non-existent attribute");
 	}
 
@@ -308,7 +307,7 @@ public class LicenseAttributesTest
 		manager.UpdateLicenseAttributes(newAttributes);
 
 		// Assert
-		Assert.AreEqual(2, manager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(2, manager.LicenseAttributes, "License attributes count should match");
 		Assert.AreEqual("Value", manager.LicenseAttributes["CustomAttribute"]);
 		Assert.AreEqual("Sales", manager.LicenseAttributes["Department"]);
 	}
@@ -344,7 +343,7 @@ public class LicenseAttributesTest
 		manager.UpdateLicenseAttributes(initialAttributes);
 
 		// Assert
-		Assert.AreEqual(2, manager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(2, manager.LicenseAttributes, "License attributes count should match");
 
 		// If no changes were detected, the dirty flags should remain false
 		Assert.IsFalse(manager.IsKeypairDirty, "IsKeypairDirty flag should not change when attributes haven't changed");
@@ -386,7 +385,7 @@ public class LicenseAttributesTest
 		manager.UpdateLicenseAttributes(modifiedAttributes);
 
 		// Assert
-		Assert.AreEqual(3, manager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(3, manager.LicenseAttributes, "License attributes count should match");
 		Assert.AreEqual("NewValue", manager.LicenseAttributes["CustomAttribute"]);
 		Assert.AreEqual("Sales", manager.LicenseAttributes["Department"]);
 		Assert.AreEqual("value", manager.LicenseAttributes["NewAttribute"]);
@@ -408,11 +407,11 @@ public class LicenseAttributesTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => manager.UpdateLicenseAttributes(attributesWithReservedName),
+		Assert.ThrowsExactly<ArgumentException>(() => manager.UpdateLicenseAttributes(attributesWithReservedName),
 			  "Should throw ArgumentException for reserved attribute name");
 
 		// Verify the dictionary wasn't modified
-		Assert.AreEqual(0, manager.LicenseAttributes.Count, "LicenseAttributes should remain empty");
+		Assert.IsEmpty(manager.LicenseAttributes, "LicenseAttributes should remain empty");
 	}
 
 	[TestMethod]
@@ -430,7 +429,7 @@ public class LicenseAttributesTest
 		manager.UpdateLicenseAttributes(attributes);
 
 		// Assert
-		Assert.AreEqual(2, manager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(2, manager.LicenseAttributes, "License attributes count should match");
 		Assert.AreEqual(string.Empty, manager.LicenseAttributes["EmptyValue"], "Empty value should be preserved");
 		Assert.AreEqual("some value", manager.LicenseAttributes["NormalValue"], "Normal value should be preserved");
 	}
@@ -455,7 +454,7 @@ public class LicenseAttributesTest
 		manager.UpdateLicenseAttributes(newAttributes);
 
 		// Assert
-		Assert.AreEqual(1, manager.LicenseAttributes.Count, "License attributes count should match");
+		Assert.HasCount(1, manager.LicenseAttributes, "License attributes count should match");
 		Assert.IsTrue(manager.LicenseAttributes.ContainsKey("AttributeToKeep"), "Attribute to keep should exist");
 		Assert.IsFalse(manager.LicenseAttributes.ContainsKey("AttributeToRemove"), "Removed attribute should not exist");
 	}

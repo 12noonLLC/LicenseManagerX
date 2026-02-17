@@ -20,18 +20,17 @@ project to handle license generation and validation.
 In addition to this Windows application, License Manager X can also be used
 from a command line to support scripting, etc.
 
-The optional [LicenseManager_12noon.Client NuGet package](https://nuget.org/packages/LicenseManager_12noon.Client)
-has an improved API to validate licenses for your .NET application.
+Your application will need to either:
+- Use the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client) NuGet package, which has an improved API to validate licenses for your .NET application.
+- Use the original **Standard.Licensing** NuGet package on which it is based.
 
-Your application will need to import the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client)
-NuGet package, which has an improved API to validate licenses for your .NET application.
-Alternatively, your application can use the original **Standard.Licensing** NuGet package on which it is based.
 You can switch at any time--you are not locked in to one or the other.
 
 > Note that the **LicenseManager_12noon.Client** NuGet package includes the fixes in the
 [Standard.Licensing.12noon NuGet package](https://nuget.org/packages/Standard.Licensing.12noon)
 for the `Expiration` property.
-When the pull request with those fixes is accepted into the original **Standard.Licensing** project,
+When/If [the pull request with those fixes](https://github.com/junian/Standard.Licensing/pull/47)
+is accepted into the original **Standard.Licensing** project,
 the **Standard.Licensing.12noon** package will be deprecated.
 
 You can download the License Manager X application from the Microsoft Store.
@@ -303,14 +302,3 @@ should keep the license file.
 
 The **LicenseManagerX_Example** project is an example application to demonstrate how to
 use the NuGet client library to validate a license and access the license's information.
-
-## NuGet Package Signing
-
-For information about implementing NuGet package signing to enhance security and build trust with package consumers, see [NUGET_SIGNING.md](NUGET_SIGNING.md).
-
-This document covers:
-- Security benefits of package signing
-- Advantages and considerations
-- Step-by-step implementation guide
-- CI/CD integration with GitHub Actions
-- Certificate management best practices

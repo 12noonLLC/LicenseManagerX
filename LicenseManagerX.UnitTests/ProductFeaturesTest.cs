@@ -7,25 +7,24 @@ namespace LicenseManagerX.UnitTests;
 [TestClass]
 public class ProductFeaturesTest
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-	private static TestContext _testContext;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+	public TestContext TestContext { get; private set; }
+
 	private static string PathTestFolder = string.Empty;
+
 	private string PathLicenseFile = string.Empty;
 	private string PathKeypairFile = string.Empty;
 
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		_testContext = testContext;
 		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 	}
 
 	[TestInitialize]
 	public void TestSetup()
 	{
-		PathLicenseFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManagerX.LicenseManager.FileExtension_License);
-		PathKeypairFile = Path.Combine(PathTestFolder, _testContext.TestName + LicenseManagerX.LicenseManager.FileExtension_PrivateKey);
+		PathLicenseFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManagerX.LicenseManager.FileExtension_License);
+		PathKeypairFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManagerX.LicenseManager.FileExtension_PrivateKey);
 	}
 
 	/// <summary>
@@ -95,7 +94,7 @@ public class ProductFeaturesTest
 		newManager.LoadKeypair(PathKeypairFile);
 
 		// Assert
-		Assert.AreEqual(features.Count, newManager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(features.Count, newManager.ProductFeatures, "Product features count should match");
 		foreach (var feature in features)
 		{
 			Assert.IsTrue(newManager.ProductFeatures.ContainsKey(feature.Key), $"Feature '{feature.Key}' should exist");
@@ -131,7 +130,7 @@ public class ProductFeaturesTest
 
 		// Assert
 		Assert.IsTrue(isValid, $"License should be valid. Errors: {messages}");
-		Assert.AreEqual(features.Count, newManager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(features.Count, newManager.ProductFeatures, "Product features count should match");
 		foreach (var feature in features)
 		{
 			Assert.IsTrue(newManager.ProductFeatures.ContainsKey(feature.Key), $"Feature '{feature.Key}' should exist");
@@ -186,7 +185,7 @@ public class ProductFeaturesTest
 		// Assert
 		Assert.IsTrue(isValid, $"License should be valid. Errors: {messages}");
 		Assert.IsFalse(licenseFile.HasProductFeature("NonExistentFeature"), "Should return false for non-existent feature");
-		Assert.ThrowsException<ArgumentException>(() => licenseFile.GetProductFeature("NonExistentFeature"),
+		Assert.ThrowsExactly<ArgumentException>(() => licenseFile.GetProductFeature("NonExistentFeature"),
 			 "Should throw ArgumentException for non-existent feature");
 	}
 
@@ -304,7 +303,7 @@ public class ProductFeaturesTest
 		manager.UpdateProductFeatures(newFeatures);
 
 		// Assert
-		Assert.AreEqual(2, manager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(2, manager.ProductFeatures, "Product features count should match");
 		Assert.AreEqual("100", manager.ProductFeatures["MaxUsers"]);
 		Assert.AreEqual("true", manager.ProductFeatures["AllowBackups"]);
 	}
@@ -340,7 +339,7 @@ public class ProductFeaturesTest
 		manager.UpdateProductFeatures(initialFeatures);
 
 		// Assert
-		Assert.AreEqual(2, manager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(2, manager.ProductFeatures, "Product features count should match");
 
 		// If no changes were detected, the dirty flags should remain false
 		Assert.IsFalse(manager.IsKeypairDirty, "IsKeypairDirty flag should not change when features haven't changed");
@@ -382,7 +381,7 @@ public class ProductFeaturesTest
 		manager.UpdateProductFeatures(modifiedFeatures);
 
 		// Assert
-		Assert.AreEqual(3, manager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(3, manager.ProductFeatures, "Product features count should match");
 		Assert.AreEqual("200", manager.ProductFeatures["MaxUsers"]);
 		Assert.AreEqual("true", manager.ProductFeatures["AllowBackups"]);
 		Assert.AreEqual("value", manager.ProductFeatures["NewFeature"]);
@@ -404,11 +403,11 @@ public class ProductFeaturesTest
 		};
 
 		// Act & Assert
-		Assert.ThrowsException<ArgumentException>(() => manager.UpdateProductFeatures(featuresWithReservedName),
+		Assert.ThrowsExactly<ArgumentException>(() => manager.UpdateProductFeatures(featuresWithReservedName),
 			 "Should throw ArgumentException for reserved feature name");
 
 		// Verify the dictionary wasn't modified
-		Assert.AreEqual(0, manager.ProductFeatures.Count, "ProductFeatures should remain empty");
+		Assert.IsEmpty(manager.ProductFeatures, "ProductFeatures should remain empty");
 	}
 
 	[TestMethod]
@@ -426,7 +425,7 @@ public class ProductFeaturesTest
 		manager.UpdateProductFeatures(features);
 
 		// Assert
-		Assert.AreEqual(2, manager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(2, manager.ProductFeatures, "Product features count should match");
 		Assert.AreEqual(string.Empty, manager.ProductFeatures["EmptyValue"], "Empty value should be preserved");
 		Assert.AreEqual("some value", manager.ProductFeatures["NormalValue"], "Normal value should be preserved");
 	}
@@ -451,7 +450,7 @@ public class ProductFeaturesTest
 		manager.UpdateProductFeatures(newFeatures);
 
 		// Assert
-		Assert.AreEqual(1, manager.ProductFeatures.Count, "Product features count should match");
+		Assert.HasCount(1, manager.ProductFeatures, "Product features count should match");
 		Assert.IsTrue(manager.ProductFeatures.ContainsKey("FeatureToKeep"), "Feature to keep should exist");
 		Assert.IsFalse(manager.ProductFeatures.ContainsKey("FeatureToRemove"), "Removed feature should not exist");
 	}

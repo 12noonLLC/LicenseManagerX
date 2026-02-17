@@ -41,7 +41,7 @@
     <AppxBundle>Always</AppxBundle>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="..\LicenseManagerX.Console\bin\$(PlatformTarget)\$(Configuration)\net9.0-windows\win-x64\LicenseManagerX.Console.exe">
+    <Content Include="$(ArtifactsPath)bin\LicenseManagerX.Console\release_win-x64\LicenseManagerX.Console.exe">
       <Link>LicenseManagerX.Console.exe</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -103,7 +103,7 @@
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LicenseManagerX.Console\LicenseManagerX.Console.csproj" />

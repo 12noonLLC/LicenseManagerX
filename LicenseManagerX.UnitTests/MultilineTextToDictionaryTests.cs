@@ -18,7 +18,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(0, result.Count);
+		Assert.IsEmpty(result);
 	}
 
 	[TestMethod]
@@ -32,7 +32,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(0, result.Count);
+		Assert.IsEmpty(result);
 	}
 
 	[TestMethod]
@@ -46,7 +46,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(0, result.Count);
+		Assert.IsEmpty(result);
 	}
 
 	[TestMethod]
@@ -60,7 +60,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(1, result.Count);
+		Assert.HasCount(1, result);
 		Assert.AreEqual("value", result["key"]);
 	}
 
@@ -75,7 +75,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(3, result.Count);
+		Assert.HasCount(3, result);
 		Assert.AreEqual("value1", result["key1"]);
 		Assert.AreEqual("value2", result["key2"]);
 		Assert.AreEqual("value3", result["key3"]);
@@ -92,7 +92,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(2, result.Count);
+		Assert.HasCount(2, result);
 		Assert.AreEqual(string.Empty, result["key1"]);
 		Assert.AreEqual(string.Empty, result["key2"]);
 	}
@@ -108,7 +108,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(2, result.Count);
+		Assert.HasCount(2, result);
 		Assert.AreEqual("value1", result["key1"]);
 		Assert.AreEqual("value2", result["key2"]);
 	}
@@ -124,7 +124,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(2, result.Count);
+		Assert.HasCount(2, result);
 		Assert.AreEqual("value=with=equals", result["key1"]);
 		Assert.AreEqual("another=value", result["key2"]);
 	}
@@ -143,7 +143,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(3, result.Count);
+		Assert.HasCount(3, result);
 		Assert.AreEqual("value1", result["key1"]);
 		Assert.AreEqual("value2", result["key2"]);
 		Assert.IsFalse(result.ContainsKey(string.Empty));
@@ -160,7 +160,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(1, result.Count);
+		Assert.HasCount(1, result);
 		Assert.AreEqual("value2", result["key"]);
 	}
 
@@ -178,7 +178,7 @@ public class MultilineTextToDictionaryTests
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(2, result.Count);
+		Assert.HasCount(2, result);
 		Assert.AreEqual("value1", result["key1"]);
 		Assert.AreEqual("value2", result["key2"]);
 	}

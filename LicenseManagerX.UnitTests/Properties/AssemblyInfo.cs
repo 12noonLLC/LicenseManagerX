@@ -2,6 +2,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+[assembly: Parallelize(
+	 Workers = 0,                      // 0 = use environment default
+	 Scope = ExecutionScope.ClassLevel // or MethodLevel if you prefer
+)]
+
 //[assembly: AssemblyTitle("LicenseManagerX.UnitTests")]
 [assembly: AssemblyDescription("")]
 //[assembly: AssemblyConfiguration("")]
