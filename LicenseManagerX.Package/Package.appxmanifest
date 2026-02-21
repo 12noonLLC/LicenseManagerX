@@ -11,7 +11,7 @@
   <Identity
     Name="12noonLLC.LicenseManagerX"
     Publisher="CN=818EDB1E-ABB0-436E-AD51-5666CC92355C"
-    Version="2.3.6.0" />
+    Version="2.4.0.0" />
 
   <Properties>
     <DisplayName>License Manager X</DisplayName>
