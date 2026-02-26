@@ -1,7 +1,9 @@
-# .github/workflows/build.yml
+﻿# .github/workflows/build.yml
+#
 # Build and Release workflow for License Manager X
 #
 # - Trigger on push to any branch, on version tags (e.g., v1.2.3), or on manual dispatch.
+# - Using a version tag will signal an MSIX build for the MS Store and a standalone EXE build.
 # - If a version tag (e.g., v1.2.3) is pushed, create a GitHub release for that version if not already present.
 # - If the version tag is not on the 'main' branch, mark the GitHub release as 'draft'.
 # - Build and publish the NuGet package to NuGet.org only if the version tag is on the main branch.
@@ -28,109 +30,119 @@ on:
       - 'LICENSE'
   workflow_dispatch:
 
-permissions:
-  contents: write
-  actions: write  # 👈 lets skip-duplicate-actions cancel other runs
-
 env:
-  # Path to the project files relative to the root of the project.
-  NUGET_PACKAGE_NAME:        LicenseManager_12noon.Client
-  PROJECT_CLIENT_FILE_PATH:  LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj
-  PROJECT_APP_FILE_PATH:     LicenseManagerX/LicenseManagerX.csproj
-  PROJECT_TESTS_FILE_PATH:   LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj
-  PROJECT_EXAMPLE:           LicenseManagerX_Example
-  PROJECT_EXAMPLE_FILE_PATH: LicenseManagerX_Example/LicenseManagerX_Example.csproj
+  # Paths to the project files relative to the root of the project
+  PROJECT_APP_PATH:         LicenseManagerX\LicenseManagerX.csproj
+  PROJECT_TESTS_PATH:       LicenseManagerX.UnitTests\LicenseManagerX.UnitTests.csproj
+  PROJECT_WAP_PATH:         LicenseManagerX.Package\LicenseManagerX.Package.wapproj
+  PROJECT_MANIFEST_PATH:    LicenseManagerX.Package\Package.appxmanifest
+  DIRECTORY_BUILD_PROPS:    .\Directory.Build.props
+  DIRECTORY_PACKAGES_PROPS: .\Directory.Packages.props
+
+  # Solution-specific files
+  NUGET_PACKAGE_NAME:    LicenseManager_12noon.Client
+  PROJECT_CLIENT_PATH:   LicenseManager_12noon.Client\LicenseManager_12noon.Client.csproj
+  PROJECT_CONSOLE_PATH:  LicenseManagerX.Console\LicenseManagerX.Console.csproj
+  PROJECT_EXAMPLE_PATH:  LicenseManagerX_Example\LicenseManagerX_Example.csproj
+  LICENSE_FILE_PATH:     LicenseManagerX_Example\LicenseManagerX_Example.lic
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
   # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
   BUILD_CONFIGURATION: Release
 
+  # Local Action constants
+  PUBLISH_FILES_PATH: ${{ github.workspace }}\release
+  PUBLISH_FILES_PATH_LINUX: ${{ github.workspace }}/release
   ARTIFACT_NAME: LicenseManagerX
   ARTIFACT_PACKAGE: package-licensemanagerx
 
 concurrency:
-  group: licensemanagerx-${{ github.sha }}
+  group: licensemanagerx-${{ github.event_name }}
   cancel-in-progress: true
 
 # Jobs are run in parallel unless `needs` is specified.
 # https://docs.github.com/en/actions/learn-github-actions/managing-complex-workflows#creating-dependent-jobs
 jobs:
-  # https://github.com/marketplace/actions/skip-duplicate-actions
-  precheck:
-    name: 🧠 Check for redundant runs
-    runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip.outputs.should_skip }}
-    steps:
-      - id: skip
-        if: ${{ github.ref_type != 'tag' }}
-        uses: fkirc/skip-duplicate-actions@v5.3.1
-        with:
-          paths_ignore: '[ "**/*.gitignore", "**/*.gitattributes", "**/*.md", "LICENSE" ]'
-          skip_after_successful_duplicate: 'true'
-          concurrent_skipping: 'same_content_newer'
-          cancel_others: 'true'
-          do_not_skip: '[ "push", "workflow_dispatch", "pull_request" ]'
-
   build:
     name: 🏗 Build and test
-    needs: precheck
-    if: ${{ needs.precheck.outputs.should_skip != 'true' }}
-    runs-on: windows-latest
+    # TODO: Change back when Windows 2025 with VS2026 is available. (4 May 2026)
+    #runs-on: windows-latest
+    runs-on: windows-2025-vs2026
+    permissions:
+      contents: read
 
     steps:
-      - name: 🚫 Prevent rerun if skipped
-        shell: bash
-        run: |
-          if [ "$GITHUB_RUN_ATTEMPT" -gt 1 ]; then
-            echo "This is a rerun. Skipping build."
-            exit 1
-          fi
-
-      - name: 🗒️ Output state
+      - name: 🗒️ Output variables
         run: |
           echo "🚀 Building..."
           echo "GITHUB_SHA: ${{ github.sha }}"
           echo "GITHUB_REF: ${{ github.ref }}"
           echo "GITHUB_REF_NAME: ${{ github.ref_name }}"
           echo "GITHUB_REF_TYPE: ${{ github.ref_type }}"
+          echo "GITHUB_EVENT_NAME: ${{ github.event_name }}"
+          echo "GITHUB_EVENT_BASEREF: ${{ github.event.base_ref }}"
+          echo "GITHUB_EVENT_COMMIT_MSG: ${{ github.event.head_commit.message }}"
           #export GITHUB_REF_TYPE="${{ github.ref_type }}"
 
-      # Reference the version with ${{ steps.extract_version.outputs.version }}
-      - name: 🏷️ Extract version from tag
-        id: extract_version
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      # https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations#yaml-anchors-and-aliases
+      - &step_checkout
+        name: 🧾 Check out repository
+        uses: actions/checkout@v6
+
+      - &step_compare_versions
+        name: 🔎 Compare app versions in props and manifest
         shell: pwsh
         run: |
-          $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-          Write-Host "GITHUB_REF: $env:GITHUB_REF"
-          echo "version=$version"
+          # 1. Read VersionPrefix from Directory.Build.props
+          [xml]$props = Get-Content "${{ env.DIRECTORY_BUILD_PROPS }}"
+          $versionPrefix = ([string]$props.Project.PropertyGroup.VersionPrefix).Trim()
+          if ([string]::IsNullOrWhiteSpace($versionPrefix))
+          {
+            throw "VersionPrefix not found in ${{ env.DIRECTORY_BUILD_PROPS }}"
+          }
 
-      - name: 🧾 Check out repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+          # 2. Read package version from Directory.Packages.props
+          [xml]$pkgProps = Get-Content "${{ env.DIRECTORY_PACKAGES_PROPS }}"
+          $pkgNode = $pkgProps.Project.ItemGroup.PackageVersion |
+            Where-Object { $_.Include -eq "LicenseManager_12noon.Client" }
 
-      # Reference the branch with ${{ steps.tag_branches.outputs.active_branch }}
-      - name: 🏷️ Find branch(es) containing tag commit
-        id: tag_branches
-        shell: bash
-        run: |
-          TAG_COMMIT=$(git rev-list -n 1 "$GITHUB_REF")
-          # List all remote branches containing this commit, strip 'origin/' prefix
-          # Trim leading/trailing spaces from each branch name
-          BRANCHES=$(git branch -r --contains "$TAG_COMMIT" | sed 's|origin/||' | sed 's/^[ \t]*//;s/[ \t]*$//' | tr '\n' ',' | sed 's/,$//')
-          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
-          # Get the first branch (for single-branch logic), also trimmed
-          ACTIVE_BRANCH=$(echo "$BRANCHES" | cut -d',' -f1 | sed 's/^[ \t]*//;s/[ \t]*$//')
-          echo "active_branch=$ACTIVE_BRANCH" >> $GITHUB_OUTPUT
-          echo "TAG_COMMIT=$TAG_COMMIT"
-          echo "BRANCHES=$BRANCHES"
-          echo "ACTIVE_BRANCH=$ACTIVE_BRANCH"
+          if (-not $pkgNode)
+          {
+            throw "PackageVersion entry for LicenseManager_12noon.Client not found in ${{ env.DIRECTORY_PACKAGES_PROPS }}"
+          }
 
-      - name: 🛠️ Set up .NET
+          $packageVersion = ([string]$pkgNode.Version).Trim()
+          if ([string]::IsNullOrWhiteSpace($packageVersion))
+          {
+            throw "Version attribute missing for LicenseManager_12noon.Client in ${{ env.DIRECTORY_PACKAGES_PROPS }}"
+          }
+
+          # 3. Read manifest Identity.Version
+          [xml]$manifest = Get-Content "${{ env.PROJECT_MANIFEST_PATH }}"
+          $manifestVersion = ([string]$manifest.Package.Identity.Version).Trim()
+          if ([string]::IsNullOrWhiteSpace($manifestVersion))
+          {
+            throw "Identity.Version not found in ${{ env.PROJECT_MANIFEST_PATH }}"
+          }
+
+          # 4. Normalize to 4-part versions
+          $expected = "$versionPrefix.0"
+          $expectedPackage = "$packageVersion.0"
+
+          # 5. Compare manifest version
+          if (($manifestVersion -ne $expected) -or ($expectedPackage -ne $expected))
+          {
+            throw "Version mismatch: Directory.Build.props: $versionPrefix | Directory.Packages.props: $packageVersion | Package.appxmanifest: $manifestVersion"
+          }
+
+          Write-Host "Version check successful:"
+          Write-Host "  Directory.Build.props:    $versionPrefix"
+          Write-Host "  Directory.Packages.props: $packageVersion"
+          Write-Host "  Package.appxmanifest:     $manifestVersion"
+
+      - &step_setup_dotnet
+        name: 🛠️ Set up .NET
         uses: actions/setup-dotnet@v5
         with:
           # The NuGet package supports .NET 8, 9, and 10.
@@ -140,137 +152,211 @@ jobs:
             9.0.x
             10.0.x
           dotnet-quality: ga
+          global-json-file: global.json
 
-      # Work around https://github.com/actions/setup-dotnet/issues/155
-      - name: 🧹 Clean solution and NuGet
-        run: |
-          dotnet clean --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64
-          dotnet nuget locals all --clear
+      - &step_setup_msbuild
+        name: 🧰 Set up MSBuild
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: x64
+          vs-version: '[18.0,19.0)'
 
-      # Build NuGet package for .NET 8, 9, and 10
-      - name: 🏗 Build NuGet package and main application
+      # RID added for MSBuild of MSIX
+      # "Without --runtime win-x64, dotnet restore only downloads packages
+      # needed for the current "Any CPU" / generic target.
+      # It doesn't download platform-specific runtime packs.
+      # Adding --runtime win-x64 to the restore command tells
+      # NuGet upfront to download the platform-specific runtime
+      # packs so they're available when the publish step runs."
+      - &step_restore_nuget
+        name: 📦 Restore NuGet packages
         run: |
-          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
-            --configuration ${{env.BUILD_CONFIGURATION}} `
-            --runtime win-x64 --framework net8.0
-          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
-            --configuration ${{env.BUILD_CONFIGURATION}} `
-            --runtime win-x64 --framework net9.0
-          dotnet build ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --self-contained `
-            --configuration ${{env.BUILD_CONFIGURATION}} `
-            --runtime win-x64 --framework net10.0
-          dotnet build ${{env.PROJECT_APP_FILE_PATH}} --nologo --self-contained `
-            --configuration ${{env.BUILD_CONFIGURATION}} `
+          dotnet restore ${{ env.PROJECT_APP_PATH }}     --runtime win-x64
+          dotnet restore ${{ env.PROJECT_TESTS_PATH }}
+          dotnet restore ${{ env.PROJECT_CLIENT_PATH }}  --runtime win-x64
+          dotnet restore ${{ env.PROJECT_CONSOLE_PATH }} --runtime win-x64
+
+      # Build NuGet package for all <TargetFrameworks>: .NET 8, 9, and 10
+      - name: 🧩 Build NuGet package
+        run: |
+          dotnet build `
+            ${{ env.PROJECT_CLIENT_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
+
+      - name: 🪟 Build application
+        run: |
+          dotnet build `
+            ${{ env.PROJECT_APP_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
+
+      # Only build Example application if this is NOT a release tag.
+      # A release pre-bumps the Example app's NuGet dependency version, which cannot
+      # restore from NuGet.org until the package is published later in the workflow.
+      - name: 📙️ Build Example Client application
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          dotnet restore `
+            ${{ env.PROJECT_EXAMPLE_PATH }} `
             --runtime win-x64
+          dotnet build `
+            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
 
-      # https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test
-      # https://learn.microsoft.com/en-us/dotnet/core/testing/microsoft-testing-platform-intro
-      - name: 💯 Run unit tests
+      - name: 📟️ Build Console application
         run: |
-          dotnet test --project ${{env.PROJECT_TESTS_FILE_PATH}} --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Release
-          dotnet test --project ${{env.PROJECT_TESTS_FILE_PATH}} --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Debug
+          dotnet build `
+            ${{ env.PROJECT_CONSOLE_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
 
+      - name: 🏗 Build unit tests
+        run: |
+          dotnet build `
+            ${{ env.PROJECT_TESTS_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
+
+      - name: 💯 Run unit tests
+        timeout-minutes: 3
+        run: |
+          dotnet test `
+            --project ${{ env.PROJECT_TESTS_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore `
+            --no-build `
+            --no-ansi `
+            --no-progress `
+            --output detailed
+
+  build_msix:
+    name: 📦 Build MS Store and Standalone
+    needs: build
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    # TODO: Change back when Windows 2025 with VS2026 is available. (4 May 2026)
+    #runs-on: windows-latest
+    runs-on: windows-2025-vs2026
+    environment: Production
+    permissions:
+      contents: read
+
+    steps:
+      - *step_checkout
+      - *step_setup_dotnet
+      - *step_setup_msbuild
+      - *step_restore_nuget
+      - *step_compare_versions
+
+      # NUGET PACKAGE START
       #
-      # NUGET PACKAGE
+      # Build the NuGet package and use it to build the sample project.
       #
-      # Note: If this push includes a version tag, we want to build the
-      # NuGet package, update the client's project, and commit changes.
-      # If not, we only want to build the client.
-      #
-      - name: 🧰 Pack NuGet package to `release` folder
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      - name: 🧳 Pack NuGet package
         run: |
           # pack => .\artifacts\package\release\LicenseManager_12noon.Client.1.2.3.4.nupkg
           # No need to use --include-symbols because it is specified in the project file.
-          dotnet pack ${{env.PROJECT_CLIENT_FILE_PATH}} --nologo --no-restore --no-build --configuration ${{env.BUILD_CONFIGURATION}} --runtime win-x64 --output ./release/
+          dotnet pack `
+            ${{ env.PROJECT_CLIENT_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore `
+            --output ${{ env.PUBLISH_FILES_PATH }}
 
-      - name: 🔍 Extract and inspect NuGet package
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      - name: 🔍 Display NuGet Manifest (.nuspec)
+        shell: pwsh
         run: |
-          # Use PowerShell syntax for variable handling
-          #$packageName = "$env:NUGET_PACKAGE_NAME.$env:VERSION.nupkg"
-          $packageItem = Get-ChildItem ./release/*.nupkg | Select-Object -First 1
-          Write-Host "Package name: $packageItem.Name"
-          dir ./release/
+          $packageItem = Get-ChildItem $env:PUBLISH_FILES_PATH_LINUX -Filter *.nupkg | Select-Object -First 1
+          Write-Host "Package name: $($packageItem.Name)"
+          Get-ChildItem $env:PUBLISH_FILES_PATH_LINUX
           mkdir temp
-          Copy-Item $packageItem.FullName ./temp/
-          cd temp
-          dir
+          Copy-Item -Path $packageItem.FullName -Destination ./temp/
+          Set-Location temp
+          Get-ChildItem
           Rename-Item -Path $packageItem.Name -NewName ($packageItem.Name + '.zip')
-          dir
-          Write-Host "unzip $packageName.zip"
+          Get-ChildItem
+          Write-Host "unzip $($packageItem.Name).zip"
           Expand-Archive -Path ($packageItem.Name + '.zip') -DestinationPath ./
-          dir
+          Get-ChildItem
           Get-Content *.nuspec
-          cd ..
+          Set-Location ..
 
-      # Use NuGet package locally (not in the NuGet Gallery)
-      # dotnet restore --verbosity detailed
-      # Install local NuGet package and update Example application (optional, can be removed if not needed)
-      - name: 🧩 Install local NuGet package and update Example application
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      - name: 🧩 Install NuGet package locally (not to the NuGet Gallery)
         run: |
-          # Create local NuGet source
           dotnet new nugetconfig --force
-          dotnet nuget add source "${{github.workspace}}\release" `
+          dotnet nuget add source "${{ env.PUBLISH_FILES_PATH }}" `
             --name LocalPackages `
             --configfile nuget.config
           dotnet nuget list source
-          # Update the version in the project file
-          dotnet add "${{env.PROJECT_EXAMPLE_FILE_PATH}}" `
-            package ${{env.NUGET_PACKAGE_NAME}} `
-            --version ${{ steps.extract_version.outputs.version }} `
-            --source LocalPackages `
-            --no-restore `
-            || exit 1
-          dotnet restore "${{env.PROJECT_EXAMPLE_FILE_PATH}}"
-          dotnet list "${{env.PROJECT_EXAMPLE_FILE_PATH}}" package
-          Get-Content ${{env.PROJECT_EXAMPLE_FILE_PATH}}
+          dotnet list "${{ env.PROJECT_EXAMPLE_PATH }}" package
 
-      - name: 🏗️ Build Example Client application
+      - name: 📙️ Build Example Client application
         run: |
-          dotnet build ${{env.PROJECT_EXAMPLE_FILE_PATH}} --nologo `
-            --configuration ${{env.BUILD_CONFIGURATION}} `
-            --self-contained `
-            --runtime win-x64
-          Get-Content ${{env.PROJECT_EXAMPLE_FILE_PATH}}
-
-      - name: 📋 Commit changes to Example Client
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          # We are on a detached HEAD, so we have to check out the tagged branch in order to push the commit.
-          git checkout ${{ steps.tag_branches.outputs.active_branch }}
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add "${{env.PROJECT_EXAMPLE_FILE_PATH}}"
-          git status
-          git commit -m "Release ${{ steps.extract_version.outputs.version }} and update Example Client to use latest NuGet package"
-          git push origin ${{ steps.tag_branches.outputs.active_branch }}
-          git log --reverse --oneline -5
+          dotnet restore `
+            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            --runtime win-x64 `
+            --configfile nuget.config
+          dotnet build `
+            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
       #
       # NUGET PACKAGE END
-      #
 
-      # Publish to sibling `release` folder.
-      - name: 📁 Publish app to release folder
+      - name: 📁 Publish standalone app
         run: |
-          # Build single-file deployment
-          dotnet publish ${{env.PROJECT_APP_FILE_PATH}}     --property:PublishProfile=FolderProfile --output ./release/
-          dotnet publish ${{env.PROJECT_EXAMPLE_FILE_PATH}} --property:PublishProfile=FolderProfile --output ./release/
+          $commonArgs = @(
+            '--configuration', '${{ env.BUILD_CONFIGURATION }}',
+            '--no-restore',
+            '--property:Platform=x64',
+            '--property:RuntimeIdentifier=win-x64',
+            '--property:PublishProtocol=FileSystem',
+            '--property:SelfContained=false',
+            '--property:PublishReadyToRun=false',
+            '--property:PublishTrimmed=false',
+            '--property:PublishSingleFile=true',
+            '--property:PublishDir="${{ env.PUBLISH_FILES_PATH }}\local"'
+          )
+          dotnet publish @commonArgs ${{ env.PROJECT_APP_PATH }}
+          dotnet publish @commonArgs ${{ env.PROJECT_EXAMPLE_PATH }}
+          dotnet publish @commonArgs ${{ env.PROJECT_CONSOLE_PATH }}
 
-      - name: 📂 Copy extra files to release folder
+      - name: 📂 Copy application license (.lic) to deployment folder
         run: |
-          Copy-Item -Path LICENSE -Destination ./release/
-          Copy-Item -Path ${{env.PROJECT_EXAMPLE}}/${{env.PROJECT_EXAMPLE}}.lic -Destination ./release/ -ErrorAction SilentlyContinue
+          Copy-Item -Destination ${{ env.PUBLISH_FILES_PATH }}\local -Path ${{ env.LICENSE_FILE_PATH }}
 
-      # Upload release artifact to share with next job
-      # https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts#about-workflow-artifacts
-      # https://github.com/marketplace/actions/upload-a-build-artifact
-      - name: 📤 Upload deployment folder as a build artifact
+      - name: 📦 Zip and delete standalone folder
+        working-directory: ${{ env.PUBLISH_FILES_PATH_LINUX }}
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "local/*" -DestinationPath "${{env.ARTIFACT_NAME}}.zip" -Force
+          Remove-Item "local" -Recurse -Force
+
+      # LicenseManagerX_Package_#.##.###.0_x64_bundle.msixupload
+      - name: 🪟 Build MSIX bundle (.msixupload) for Microsoft Store
+        run: |
+          msbuild `
+            ${{ env.PROJECT_WAP_PATH }} `
+            -property:Configuration=${{ env.BUILD_CONFIGURATION }} `
+            -property:Platform=x64 `
+            -property:UapAppxPackageBuildMode=StoreUpload `
+            -property:AppxPackageDir="${{ env.PUBLISH_FILES_PATH }}" `
+            -verbosity:quiet
+
+      - name: ❌ Delete unwanted files from deployment folder
+        run: |
+          Remove-Item -Force -ErrorAction SilentlyContinue -Recurse -Path "${{ env.PUBLISH_FILES_PATH }}\*_Package_*_Test"
+
+      - name: 📂 Copy extra files to deployment folder
+        run: |
+          Copy-Item -Destination ${{ env.PUBLISH_FILES_PATH }} -Path LICENSE
+
+      - name: 📤 Upload deployment folder
         uses: actions/upload-artifact@v7
         with:
-          name: ${{env.ARTIFACT_PACKAGE}}
-          path: ./release/
+          name: ${{ env.ARTIFACT_PACKAGE }}
+          path: ${{ env.PUBLISH_FILES_PATH }}
+          if-no-files-found: error
           retention-days: 1
 
   #
@@ -288,23 +374,26 @@ jobs:
   # RELEASE -- create tag and push it:
   # If this is a push on `main` of a v1.2.3 tag, create a PRODUCTION release for GitHub and NuGet.
   #
-  # •	Manual dispatch: Only the build job runs, no release is created.
-  # •	Normal push (no tag): Only the build job runs, no release is created.
-  # •	Tag push on other branch: Both build and release jobs run, draft release, no NuGet publish.
-  # •	Tag push on main: Both build and release jobs run, production release and NuGet publish.
+  # • Manual dispatch: Only the build job runs, no release is created.
+  # • Normal push (no tag): Only the build job runs, no release is created.
+  # • Tag push on other branch: Both build and release jobs run, draft release, no NuGet publish.
+  # • Tag push on main: Both build and release jobs run, production release and NuGet publish.
   #
-  # | Scenario        | Build | Release Job Runs | Release Type | NuGet Publish | Notes               |
-  # |-----------------|-------|------------------|--------------|---------------|---------------------|
-  # | Normal (no tag) | Yes   | No               | N/A          | No            | Only build          |
-  # | Manual dispatch | Yes   | No               | N/A          | No            | Only build          |
-  # | Test (other br) | Yes   | Yes              | Draft        | No            | Tag on other branch |
-  # | Release (main)  | Yes   | Yes              | Production   | Yes           | Tag on main         |
+  # | Scenario        | Build | Build MSIX | Release Job | Release Type | NuGet Publish | Notes               |
+  # |-----------------|-------|------------|-------------|--------------|---------------|---------------------|
+  # | Normal (no tag) | Yes   | No         | No          | N/A          | No            | Only build          |
+  # | Manual dispatch | Yes   | No         | No          | N/A          | No            | Only build          |
+  # | Test (other br) | Yes   | Yes        | Yes         | Draft        | No            | Tag on other branch |
+  # | Release (main)  | Yes   | Yes        | Yes         | Production   | Yes           | Tag on main         |
   #
   release:
     name: 🚀 Create GitHub release
-    needs: build
+    # We require the 'build' job because it runs unit tests.
+    needs: [ build, build_msix]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: 🧾 Check out repository
@@ -312,21 +401,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Download publish artifact from previous job
-      # https://github.com/marketplace/actions/download-a-build-artifact
       - name: 📥 Download deployment folder as a build artifact
         uses: actions/download-artifact@v8
         with:
-          name: ${{env.ARTIFACT_PACKAGE}}
-          path: ./release/
+          name: ${{ env.ARTIFACT_PACKAGE }}
+          path: ${{ env.PUBLISH_FILES_PATH_LINUX }}
 
       - name: 🗒️ List folder
-        run: ls -la ./release/
-
-      - name: 📦 Zip Release folder
-        working-directory: ./release
-        run: |
-          zip ../${{env.ARTIFACT_NAME}}.zip *
+        run: ls -la ${{ env.PUBLISH_FILES_PATH_LINUX }}
 
       - name: 🏷️ Get short SHA of the tag
         id: tag_sha
@@ -350,8 +432,6 @@ jobs:
             echo "on_main=false"
           fi
 
-      # Determine the version/tag for the release
-      # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables
       - name: 🏷️ Get version tag and release name
         id: get_version
         run: |
@@ -367,36 +447,60 @@ jobs:
           echo "tag=$tag"
           echo "name=$name"
 
-      # Create a release only if one does not already exist for this name.
-      # (We check the name instead of the tag because we
-      # might have multiple test releases for a version.)
+      # Create a release only if one does not already exist for this tag.
+      # We now check by *tag* instead of by name because:
+      # - The tag (e.g., "v1.2.3") is guaranteed unique in Git.
+      # - The release name (e.g., "1.2.3") differs only by the "v" prefix.
+      # - Our workflow enforces a strict 1:1 mapping between version → tag → release.
+      # - We no longer create multiple test releases with different tags for the same version.
+      # Therefore, a direct lookup by tag is the most reliable and deterministic check.
       # https://github.com/marketplace/actions/github-script
-      - name: 🧪 Check if release exists with the same name
-        id: check_release
-        uses: actions/github-script@v8
+      - name: 🧪 Check if release exists with the same tag
+        id: release_exists
+        uses: actions/github-script@v9
         with:
-          script: |
-            const name = '${{ steps.get_version.outputs.name }}';
-            const { data: releases } = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            const exists = releases.some(r => r.name === name);
-            return exists;
           result-encoding: string
+          script: |
+            const tag  = '${{ steps.get_version.outputs.tag }}';
+            const name = '${{ steps.get_version.outputs.name }}';
+            try
+            {
+              await github.rest.repos.getReleaseByTag(
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              console.log(`Release "${name}" for tag ${tag} already exists. Skipping creating a release.`);
+              return true;
+            }
+            catch (error)
+            {
+              if (error.status === 404)
+              {
+                // No release exists for this tag
+                return false;
+              }
+              // Any other error is a real failure
+              throw error;
+            }
 
+      # Create the GitHub Release for this version.
+      # The release tag (e.g., "v1.2.3") is the canonical identifier and is guaranteed unique.
+      # The release name (e.g., "1.2.3") differs only by the "v" prefix but still maps 1:1 to the tag.
+      # Since we now check for existing releases by tag, this step only runs when no release exists
+      # for the version produced by get_version.
       # https://github.com/marketplace/actions/gh-release
       - name: 🚀 Create GitHub Release
-        if: ${{ steps.check_release.outputs.result != 'true' }}
-        uses: softprops/action-gh-release@v2
+        if: ${{ steps.release_exists.outputs.result != 'true' }}
+        uses: softprops/action-gh-release@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.tag }}
-          name: ${{ steps.get_version.outputs.name }}
-          # tag on 'main' => latest
-          # else => draft
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
-          draft:     ${{ !(startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true')) }}
-          #draft: ${{ (github.ref != 'refs/heads/main') || (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) }}
+          name:     ${{ steps.get_version.outputs.name }}
+          make_latest: ${{ steps.tag_on_main.outputs.on_main == 'true' }}
+          draft:       ${{ steps.tag_on_main.outputs.on_main != 'true' }}
           # There is also a `prerelease` property. (Example: if manual start, which implies no v tag)
           #prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           #
@@ -407,37 +511,33 @@ jobs:
           generate_release_notes: true
           append_body: true
           body: |
-            <a href="https://apps.microsoft.com/detail/9PFBGG44SHLM?referrer=appbadge&mode=direct">
+            <p><a href="https://apps.microsoft.com/detail/9PFBGG44SHLM?referrer=appbadge&mode=direct">
               <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
-            </a>
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            </a></p>
 
       - name: 🗒️ Output release info
-        if: ${{ steps.check_release.outputs.result != 'true' }}
+        if: ${{ steps.release_exists.outputs.result != 'true' }}
         run: |
-          echo "Release created for tag: ${{ steps.get_version.outputs.tag }}"
-          echo "Release name: ${{ steps.get_version.outputs.name }}"
+          echo "Release ${{ steps.get_version.outputs.name }} created on tag ${{ steps.get_version.outputs.tag }}"
 
       # https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package
       # Publish NuGet package to nuget.org if this is a version tag on the main branch
       - name: 🚀 Publish NuGet package
-        if: ${{ startsWith(github.ref, 'refs/tags/v') && (steps.tag_on_main.outputs.on_main == 'true') }}
+        if: ${{ steps.tag_on_main.outputs.on_main == 'true' }}
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.API_KEY_NUGET }}
         run: |
           # NuGet.org
           # --skip-duplicate prevents an error if this package version already exists.
           # It cannot overwrite an existing package with the same version.
-          dotnet nuget push ./release/*.nupkg \
+          # Pushing the .nupkg file automatically pushes the associated .snupkg file.
+          dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg \
             --source "https://api.nuget.org/v3/index.json" \
             --api-key "$NUGET_AUTH_TOKEN" \
             --skip-duplicate
-          # Pushing the .nupkg file automatically pushes the associated .snupkg file.
-          #dotnet nuget push ./release/*.snupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate
-          #WHY? GitHub Packages
-          #dotnet nuget push ./release/*.nupkg --api-key ${{secrets.TOKEN_PACKAGES}} --source https://nuget.pkg.github.com/${{github.repository_owner}}/index.json --skip-duplicate
-          #dotnet nuget push ./release/*.snupkg --api-key ${{secrets.TOKEN_PACKAGES}} --source https://nuget.pkg.github.com/${{github.repository_owner}}/index.json --skip-duplicate
+          # GitHub Packages
+          #dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg  --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+          #dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.snupkg --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
 
   #
   # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/using-conditions-to-control-job-execution
@@ -448,9 +548,9 @@ jobs:
   #
   cleanup:
     name: 🧹 Clean up artifacts
-    needs: [release]
-    runs-on: ubuntu-latest
+    needs: release
     if: ${{ always() }}
+    runs-on: ubuntu-latest
     steps:
       # Delete publish artifact so it does not count against storage
       # https://github.com/marketplace/actions/delete-artifact

@@ -1,0 +1,12 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+		<PackageVersion Include="LicenseManager_12noon.Client" Version="2.4.0" />
+		<PackageVersion Include="Standard.Licensing.12noon" Version="1.2.1.1" />
+	</ItemGroup>
+</Project>

@@ -17,18 +17,9 @@
     <PackageTags>license manager;license;licensing;lock;secure;security;sign;enterprise;version;publish;distribute;standard.licensing</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId>LicenseManager_12noon.Client</PackageId>
-    <Authors>$(Company)</Authors>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageReleaseNotes>This NuGet package supports .NET 10, .NET 9, and .NET 8. Please see the GitHub repository for more information.</PackageReleaseNotes>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0|x64'">
-    <WarningLevel>8</WarningLevel>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0|x64'">
-    <WarningLevel>8</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,7 +38,7 @@
   </ItemGroup>
 
    <ItemGroup>
-    <PackageReference Include="Standard.Licensing.12noon" Version="1.2.1.1" />
+    <PackageReference Include="Standard.Licensing.12noon" />
   </ItemGroup>
 
 </Project>

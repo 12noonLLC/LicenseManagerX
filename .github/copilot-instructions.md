@@ -21,28 +21,29 @@ The project uses the Standard.Licensing library for cryptographic license genera
 dotnet clean --configuration Release --runtime win-x64
 dotnet nuget locals all --clear
 
-# Build main application (requires .NET 9)
+# Build main application (requires the matching .NET SDK installed)
 dotnet build LicenseManagerX/LicenseManagerX.csproj --configuration Release --runtime win-x64
 
-# Build NuGet client library (multi-target: .NET 8 and .NET 9)
+# Build NuGet client library (multi-target: .NET 8, .NET 9, and .NET 10)
 dotnet build LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --configuration Release --runtime win-x64 --framework net8.0
 dotnet build LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --configuration Release --runtime win-x64 --framework net9.0
+dotnet build LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --configuration Release --runtime win-x64 --framework net10.0
 
 # Build entire solution
-dotnet build LicenseManagerX.sln --configuration Release --runtime win-x64
+dotnet build LicenseManagerX.slnx --configuration Release --runtime win-x64
 ```
 
 ### Test
 ```bash
 # Run unit tests (both Release and Debug configurations)
-dotnet test LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj --configuration Release --runtime win-x64 --verbosity normal
-dotnet test LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj --configuration Debug --runtime win-x64 --verbosity normal
+dotnet test --project LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Release
+dotnet test --project LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj --no-ansi --no-progress --output Detailed --runtime win-x64 --configuration Debug
 ```
 
 ### Package
 ```bash
 # Create NuGet package
-dotnet pack LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --configuration Release --runtime win-x64 --output ./release/
+dotnet pack LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --configuration Release --runtime win-x64 --no-restore --no-build --output ./release/
 ```
 
 ## Code Style and Conventions
@@ -62,7 +63,7 @@ dotnet pack LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --c
 - Add a comma after the last item in an initializer list.
 
 ### Project Configuration
-- Target framework: .NET 9 (main app), .NET 8 and .NET 9 (NuGet client)
+- Target frameworks: .NET 10 (main app), .NET 8/.NET 9/.NET 10 (NuGet client)
 - Platform: x64 (Windows)
 - Nullable reference types: Enabled
 - Implicit usings: Disabled (use explicit using statements)

@@ -25,10 +25,6 @@ x86/
 # NuGet Packages
 *.nupkg
 *.snupkg
-# The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
-!**/[Pp]ackages/build/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
@@ -52,8 +48,7 @@ artifacts/
 #
 # Project-specific
 #
-Directory.Build.Props
 LicenseManager_12noon.Package/Package.StoreAssociation.xml
 LicenseManager_12noon.Package/Screenshots/
-IMAGES/
+STORE/
 devtools/*.zip

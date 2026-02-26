@@ -4,9 +4,14 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Solution Items/">
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/instructions/csharp.instructions.md" />
     <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/copilot-setup-steps.yml" />
     <File Path="devtools/PublishProjects.cmd" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="LicenseManagerX.png" />
     <File Path="README.md" />
@@ -16,7 +21,6 @@
   </Project>
   <Project Path="LicenseManagerX.Package/LicenseManagerX.Package.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
     <Build Project="false" />
-    <Platform Project="x64" />
   </Project>
   <Project Path="LicenseManagerX.UnitTests/LicenseManagerX.UnitTests.csproj">
     <Platform Project="x64" />

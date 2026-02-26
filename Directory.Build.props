@@ -1,31 +1,39 @@
 <Project>
 
 	<PropertyGroup>
+		<Product>License Manager X</Product>
+		<Description>License Manager X is a Windows application designed to create and manage licenses for software applications using .NET 8, 9, or 10. It leverages the Standard.Licensing project to handle license generation and validation.</Description>
+
+		<Authors>Stefan K.S. Tucker</Authors>
 		<Company>12noon LLC</Company>
-		<Copyright>(c) 2024-2026 12noon LLC</Copyright>
-		<Product>12noon License Manager X</Product>
-		<Version>2.4.0</Version>
-		<VersionPrefix>2.4.0</VersionPrefix>
-		<VersionSuffix></VersionSuffix>
-		<FileVersion>2.4.0.0</FileVersion>
-		<AssemblyVersion>2.4.0</AssemblyVersion>
+		<Year>$([System.DateTime]::UtcNow.Year)</Year>
+		<Copyright>© 2024-$(Year) 12noon LLC</Copyright>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!--
-			dotnet build
-			dotnet test
-			dotnet publish
-			dotnet msbuild
-			msbuild MySolution.slnx
-			msbuild MyProject.csproj
-			MSBuild does not work if only a project is specified.
-			These are still issues with .slnx files.
-			<ArtifactsPath>C:\VSIntermediate\$(SolutionName)\artifacts\</ArtifactsPath>
+		<VersionPrefix>2.4.0</VersionPrefix>
+		<VersionSuffix Condition="'$(Configuration)' == 'Debug'">debug</VersionSuffix>
+		<!-- `Version` defaults to `VersionPrefix`+`VersionSuffix` -->
 
-			No need to use $(MSBuildProjectName) because VS creates subfolders in obj\ and bin\.
-		-->
+		<!-- Windows file properties A.B.C.0 -->
+		<FileVersion>$(VersionPrefix).0</FileVersion>
 
+		<!-- Stable API identity version, usually updated only on breaking changes -->
+		<!-- Only set in individual projects. -->
+		<AssemblyVersion />
+
+		<!-- Used for human-readable version, About, Explorer, crash logs, marketing|build metadata -->
+		<!-- Defaults to `Version`+githash -->
+		<InformationalVersion />
+		<IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+
+		<!-- Used for packaging (.wapproj) -->
+		<AppxBundleVersion>$(Version)</AppxBundleVersion>
+
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<ArtifactsPath>C:\VSIntermediate\LicenseManagerX\artifacts\</ArtifactsPath>
 		<BaseIntermediateOutputPath>$(ArtifactsPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 	</PropertyGroup>

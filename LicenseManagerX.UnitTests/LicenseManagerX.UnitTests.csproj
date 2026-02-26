@@ -1,20 +1,21 @@
-﻿<Project Sdk="MSTest.Sdk/4.0.0">
+﻿<Project Sdk="MSTest.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0-windows</TargetFramework>
+		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
 		<Platforms>x64</Platforms>
 
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 	</PropertyGroup>
 		
 	<PropertyGroup>
-		<!-- Enable MTP “native” dotnet test support -->
+		<!-- Enable MTP "native" dotnet test support -->
 		<UseMicrosoftTestingPlatform>true</UseMicrosoftTestingPlatform>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" />
 	</ItemGroup>
 
 	<ItemGroup>
