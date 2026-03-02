@@ -1,4 +1,4 @@
-﻿# .github/workflows/build.yml
+# .github/workflows/build.yml
 # Build and Release workflow for License Manager X
 #
 # - Trigger on push to any branch, on version tags (e.g., v1.2.3), or on manual dispatch.
@@ -315,7 +315,7 @@ jobs:
       # Download publish artifact from previous job
       # https://github.com/marketplace/actions/download-a-build-artifact
       - name: 📥 Download deployment folder as a build artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{env.ARTIFACT_PACKAGE}}
           path: ./release/
