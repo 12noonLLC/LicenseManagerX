@@ -1,4 +1,4 @@
-﻿# .github/workflows/build.yml
+# .github/workflows/build.yml
 # Build and Release workflow for License Manager X
 #
 # - Trigger on push to any branch, on version tags (e.g., v1.2.3), or on manual dispatch.
@@ -455,7 +455,7 @@ jobs:
       # Delete publish artifact so it does not count against storage
       # https://github.com/marketplace/actions/delete-artifact
       - name: ❌ Delete build artifact
-        uses: GeekyEggo/delete-artifact@v5
+        uses: GeekyEggo/delete-artifact@v6
         with:
           name: ${{ env.ARTIFACT_PACKAGE }}
           failOnError: false
