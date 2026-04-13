@@ -388,7 +388,7 @@ jobs:
       # https://github.com/marketplace/actions/gh-release
       - name: 🚀 Create GitHub Release
         if: ${{ steps.check_release.outputs.result != 'true' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.get_version.outputs.tag }}
           name: ${{ steps.get_version.outputs.name }}
