@@ -92,6 +92,7 @@ public class CreateLicenseTest
 		/// Create keypair
 		manager.Passphrase = PASSPHRASE;
 		manager.ProductId = PRODUCT_ID;
+		manager.IsLockedToAssembly = true;
 		manager.PathAssembly = PATH_ASSEMBLY;
 		manager.CreateKeypair();
 
@@ -689,6 +690,7 @@ public class CreateLicenseTest
 		manager.ExpirationDays = EXPIRATION_DAYS;
 		manager.Quantity = QUANTITY;
 
+		manager.IsLockedToAssembly = true;
 		manager.PathAssembly = PATH_ASSEMBLY;
 
 		/// Act
@@ -719,5 +721,41 @@ public class CreateLicenseTest
 		Assert.AreEqual(QUANTITY, manager.Quantity);
 
 		Assert.AreEqual(PATH_ASSEMBLY, manager.PathAssembly);
+	}
+
+	/// <summary>
+	/// Verifies that unticking "Lock to assembly" and saving removes the assembly path
+	/// from the keypair file so it is not re-loaded on the next open.
+	/// </summary>
+	[TestMethod]
+	public void TestSaveKeypairClearsPathAssemblyWhenNotLocked()
+	{
+		LicenseManagerX.LicenseManager manager = new();
+		const string PASSPHRASE = "Sadipscing vero tincidunt no minim enim aliquyam duo.";
+		const string PATH_ASSEMBLY = @"C:\Path\To\Product.exe";
+
+		manager.Passphrase = PASSPHRASE;
+		manager.CreateKeypair();
+
+		// Enable lock-to-assembly and save.
+		manager.IsLockedToAssembly = true;
+		manager.PathAssembly = PATH_ASSEMBLY;
+		manager.SaveKeypair(PathKeypairFile);
+
+		// Reload and confirm the path was persisted.
+		manager = new();
+		manager.LoadKeypair(PathKeypairFile);
+		Assert.IsTrue(manager.IsLockedToAssembly);
+		Assert.AreEqual(PATH_ASSEMBLY, manager.PathAssembly);
+
+		// Disable lock-to-assembly and save again.
+		manager.IsLockedToAssembly = false;
+		manager.SaveKeypair(PathKeypairFile);
+
+		// Reload and confirm that the assembly path is no longer persisted.
+		manager = new();
+		manager.LoadKeypair(PathKeypairFile);
+		Assert.IsFalse(manager.IsLockedToAssembly);
+		Assert.IsTrue(string.IsNullOrEmpty(manager.PathAssembly));
 	}
 }

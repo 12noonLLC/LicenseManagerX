@@ -441,7 +441,9 @@ public partial class LicenseManager : ObservableObject
 					, new XElement(ELEMENT_NAME_EXPIRATION_DAYS, ExpirationDays)
 					, new XElement(ELEMENT_NAME_QUANTITY, Quantity)
 				)
-				, new XElement(ELEMENT_NAME_PATHASSEMBLY, PathAssembly)
+				// Only persist the assembly path when lock-to-assembly is enabled;
+			// writing an empty value on load will correctly set IsLockedToAssembly = false.
+			, new XElement(ELEMENT_NAME_PATHASSEMBLY, IsLockedToAssembly ? PathAssembly : string.Empty)
 			)
 		)
 		.Save(pathKeypair);
