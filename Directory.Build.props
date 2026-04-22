@@ -8,11 +8,11 @@
 		<Authors>Stefan K.S. Tucker</Authors>
 		<Company>12noon LLC</Company>
 		<Year>$([System.DateTime]::UtcNow.Year)</Year>
-		<Copyright>© 2024-$(Year) 12noon LLC</Copyright>
+		<Copyright>Â© 2024-$(Year) 12noon LLC</Copyright>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<VersionPrefix>2.4.0</VersionPrefix>
+		<VersionPrefix>2.5.0</VersionPrefix>
 		<VersionSuffix Condition="'$(Configuration)' == 'Debug'">debug</VersionSuffix>
 		<!-- `Version` defaults to `VersionPrefix`+`VersionSuffix` -->
 
