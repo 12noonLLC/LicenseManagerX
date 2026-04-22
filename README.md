@@ -140,6 +140,12 @@ This information can be displayed by the licensed application.
 
 ## Usage
 
+### CI / Release Notes
+
+- `.github/workflows/build.yml` builds and tests on push/PR/tag and creates GitHub releases for version tags.
+- NuGet publishing is **not** done by `build.yml`.
+- Publish `LicenseManager_12noon.Client` via `.github/workflows/publish-nuget.yml`, which is manual (`workflow_dispatch`) and protected by the `nuget-prod` environment approval gate.
+
 ### Create a New License
 
 Note that the public key and product ID are passed by the licensed application

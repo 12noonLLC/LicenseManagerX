@@ -23,18 +23,36 @@ public class WorkflowSmokeTests
    }
 
    [TestMethod]
-   public void BuildWorkflow_PublishesNugetWithSkipDuplicate()
+   public void BuildWorkflow_DoesNotPublishNuget()
    {
       string workflow = ReadBuildWorkflow();
 
+      Assert.DoesNotContain("dotnet nuget push", workflow);
+   }
+
+   [TestMethod]
+   public void PublishNugetWorkflow_PublishesNugetWithSkipDuplicate()
+   {
+      string workflow = ReadPublishNugetWorkflow();
+
       Assert.Contains("dotnet nuget push", workflow);
       Assert.Contains("--skip-duplicate", workflow);
+      Assert.Contains("workflow_dispatch", workflow);
+      Assert.Contains("environment: nuget-prod", workflow);
    }
 
    private static string ReadBuildWorkflow()
    {
       string repoRoot = FindRepoRoot();
       string path = Path.Combine(repoRoot, ".github", "workflows", "build.yml");
+      Assert.IsTrue(File.Exists(path), $"Workflow file not found: {path}");
+      return File.ReadAllText(path);
+   }
+
+   private static string ReadPublishNugetWorkflow()
+   {
+      string repoRoot = FindRepoRoot();
+      string path = Path.Combine(repoRoot, ".github", "workflows", "publish-nuget.yml");
       Assert.IsTrue(File.Exists(path), $"Workflow file not found: {path}");
       return File.ReadAllText(path);
    }

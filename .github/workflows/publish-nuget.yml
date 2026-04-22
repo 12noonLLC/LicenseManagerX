@@ -1,0 +1,103 @@
+# .github/workflows/publish-nuget.yml
+#
+# Manual NuGet publish workflow for LicenseManager_12noon.Client.
+#
+# - Triggered only by manual dispatch.
+# - Requires environment approval before publishing.
+# - Restores, builds, packs, and publishes the NuGet package to NuGet.org.
+
+name: Publish NuGet Package
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_NUGET_PATH: LicenseManager_12noon.Client\LicenseManager_12noon.Client.csproj
+  BUILD_CONFIGURATION: Release
+  PUBLISH_FILES_PATH: ${{ github.workspace }}\artifacts\package
+
+jobs:
+  publish_nuget:
+    name: 🚀 Publish NuGet package
+    # TODO: Change back when Windows 2025 with VS2026 is available. (4 May 2026)
+    # runs-on: windows-latest
+    runs-on: windows-2025-vs2026
+    environment: nuget-prod
+    permissions:
+      contents: read
+
+    steps:
+      - name: 🧾 Check out repository
+        uses: actions/checkout@v6
+
+      - name: 🛠️ Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+          dotnet-quality: ga
+          global-json-file: global.json
+
+      - name: 📦 Restore NuGet package project
+        run: |
+          dotnet restore "${{ env.PROJECT_NUGET_PATH }}"
+
+      - name: 🧩 Build NuGet package project
+        run: |
+          dotnet build `
+            "${{ env.PROJECT_NUGET_PATH }}" `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
+
+      - name: 🧳 Pack NuGet package
+        run: |
+          dotnet pack `
+            "${{ env.PROJECT_NUGET_PATH }}" `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore `
+            --no-build `
+            --include-symbols `
+            --property:SymbolPackageFormat=snupkg `
+            --output "${{ env.PUBLISH_FILES_PATH }}"
+
+      - name: 🔎 List packed artifacts
+        run: |
+          Write-Host "Package output directory: ${{ env.PUBLISH_FILES_PATH }}"
+          if (-not (Test-Path "${{ env.PUBLISH_FILES_PATH }}"))
+          {
+            throw "Package output directory does not exist: ${{ env.PUBLISH_FILES_PATH }}"
+          }
+
+          $allPackages = Get-ChildItem -Path "${{ env.PUBLISH_FILES_PATH }}" -File | Where-Object { $_.Extension -in '.nupkg', '.snupkg' }
+          if ($allPackages.Count -eq 0)
+          {
+            throw "No .nupkg or .snupkg files were found in ${{ env.PUBLISH_FILES_PATH }}"
+          }
+
+          Write-Host "Discovered package files:"
+          $allPackages | ForEach-Object { Write-Host " - $($_.FullName)" }
+
+      - name: 🚀 Publish NuGet package to NuGet.org
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.API_KEY_NUGET }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_AUTH_TOKEN))
+          {
+            throw "NUGET_AUTH_TOKEN is missing or empty. Check environment/repository secrets and environment approval."
+          }
+
+          $packages = Get-ChildItem -Path "${{ env.PUBLISH_FILES_PATH }}" -Filter "*.nupkg" -File
+          if ($packages.Count -eq 0)
+          {
+            throw "No .nupkg files found in ${{ env.PUBLISH_FILES_PATH }}"
+          }
+
+          foreach ($package in $packages)
+          {
+            dotnet nuget push "$($package.FullName)" `
+              --source "https://api.nuget.org/v3/index.json" `
+              --api-key "$env:NUGET_AUTH_TOKEN" `
+              --skip-duplicate
+          }

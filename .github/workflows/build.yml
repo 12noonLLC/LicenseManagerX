@@ -6,7 +6,6 @@
 # - Using a version tag will signal an MSIX build for the MS Store and a standalone EXE build.
 # - If a version tag (e.g., v1.2.3) is pushed, create a GitHub release for that version if not already present.
 # - If the version tag is not on the 'main' branch, mark the GitHub release as 'draft'.
-# - Build and publish the NuGet package to NuGet.org only if the version tag is on the main branch.
 # - Manual dispatch builds the project but does not create a GitHub release or publish to NuGet.
 
 name: Build and Release
@@ -172,10 +171,10 @@ jobs:
       - &step_restore_nuget
         name: 📦 Restore NuGet packages
         run: |
-          dotnet restore "${{ env.PROJECT_APP_PATH }}"     --runtime win-x64
-          dotnet restore "${{ env.PROJECT_TESTS_PATH }}"
           dotnet restore "${{ env.PROJECT_NUGET_PATH }}"
+          dotnet restore "${{ env.PROJECT_APP_PATH }}"     --runtime win-x64
           dotnet restore "${{ env.PROJECT_CONSOLE_PATH }}" --runtime win-x64
+          dotnet restore "${{ env.PROJECT_TESTS_PATH }}"
 
       # Build NuGet package for all <TargetFrameworks>: .NET 8, 9, and 10
       - name: 🧩 Build NuGet package
@@ -192,6 +191,13 @@ jobs:
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
+      - name: 📟️ Build Console application
+        run: |
+          dotnet build `
+            "${{ env.PROJECT_CONSOLE_PATH }}" `
+            --configuration ${{ env.BUILD_CONFIGURATION }} `
+            --no-restore
+
       # Only build Example application if this is NOT a release tag.
       # A release requires the Example app's NuGet dependency version to be pre-bumped, so
       # it cannot restore from NuGet.org until the package is published later in the workflow.
@@ -203,13 +209,6 @@ jobs:
             --runtime win-x64
           dotnet build `
             "${{ env.PROJECT_EXAMPLE_PATH }}" `
-            --configuration ${{ env.BUILD_CONFIGURATION }} `
-            --no-restore
-
-      - name: 📟️ Build Console application
-        run: |
-          dotnet build `
-            "${{ env.PROJECT_CONSOLE_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
@@ -307,6 +306,22 @@ jobs:
 
       - name: 📁 Publish standalone app
         run: |
+          $restoreArgs = @(
+            '--runtime', 'win-x64',
+            '--property:PublishProtocol=FileSystem',
+            '--property:SelfContained=false',
+            '--property:PublishReadyToRun=false',
+            '--property:PublishTrimmed=false',
+            '--property:PublishSingleFile=true'
+          )
+          # Restore the client package project here as well, even though it is platform-neutral.
+          # The no-restore publish of the app can evaluate it in the win-x64 publish graph via
+          # project references, and this guarantees the required assets target exists.
+          dotnet restore @restoreArgs "${{ env.PROJECT_NUGET_PATH }}"
+          dotnet restore @restoreArgs "${{ env.PROJECT_APP_PATH }}"
+          dotnet restore @restoreArgs "${{ env.PROJECT_CONSOLE_PATH }}"
+          dotnet restore @restoreArgs "${{ env.PROJECT_EXAMPLE_PATH }}"
+
           $commonArgs = @(
             '--configuration', '${{ env.BUILD_CONFIGURATION }}',
             '--no-restore',
@@ -320,8 +335,8 @@ jobs:
             '--property:PublishDir="${{ env.PUBLISH_FILES_PATH }}\local"'
           )
           dotnet publish @commonArgs "${{ env.PROJECT_APP_PATH }}"
-          dotnet publish @commonArgs "${{ env.PROJECT_EXAMPLE_PATH }}"
           dotnet publish @commonArgs "${{ env.PROJECT_CONSOLE_PATH }}"
+          dotnet publish @commonArgs "${{ env.PROJECT_EXAMPLE_PATH }}"
 
       - name: 📂 Copy application license files (.lic and .private) to deployment folder
         run: |
@@ -372,22 +387,22 @@ jobs:
   # If this is a push without a version tag, build but do not create a release.
   #
   # TEST -- on a different branch, such as "yaml," create a tag and then push it:
-  # If this is a push elsewhere with a v1.2.3 tag, create a DRAFT release for GitHub and no NuGet release.
+  # If this is a push elsewhere with a v1.2.3 tag, create a DRAFT release for GitHub.
   #
   # RELEASE -- create tag and push it:
-  # If this is a push on `main` of a v1.2.3 tag, create a PRODUCTION release for GitHub and NuGet.
+  # If this is a push on `main` of a v1.2.3 tag, create a PRODUCTION release for GitHub.
   #
   # • Manual dispatch: Only the build job runs, no release is created.
   # • Normal push (no tag): Only the build job runs, no release is created.
-  # • Tag push on other branch: Both build and release jobs run, draft release, no NuGet publish.
-  # • Tag push on main: Both build and release jobs run, production release and NuGet publish.
+  # • Tag push on other branch: Both build and release jobs run, draft release.
+  # • Tag push on main: Both build and release jobs run, production release.
   #
-  # | Scenario        | Build | Build MSIX | Release Job | Release Type | NuGet Publish | Notes               |
-  # |-----------------|-------|------------|-------------|--------------|---------------|---------------------|
-  # | Normal (no tag) | Yes   | No         | No          | N/A          | No            | Only build          |
-  # | Manual dispatch | Yes   | No         | No          | N/A          | No            | Only build          |
-  # | Test (other br) | Yes   | Yes        | Yes         | Draft        | No            | Tag on other branch |
-  # | Release (main)  | Yes   | Yes        | Yes         | Production   | Yes           | Tag on main         |
+  # | Scenario        | Build | Build MSIX | Release Job | Release Type | Notes               |
+  # |-----------------|-------|------------|-------------|--------------|---------------------|
+  # | Normal (no tag) | Yes   | No         | No          | N/A          | Only build          |
+  # | Manual dispatch | Yes   | No         | No          | N/A          | Only build          |
+  # | Test (other br) | Yes   | Yes        | Yes         | Draft        | Tag on other branch |
+  # | Release (main)  | Yes   | Yes        | Yes         | Production   | Tag on main         |
   #
   release:
     name: 🚀 Create GitHub release
@@ -520,25 +535,6 @@ jobs:
         if: ${{ steps.release_exists.outputs.result != 'true' }}
         run: |
           echo "Release ${{ steps.get_version.outputs.name }} created on tag ${{ steps.get_version.outputs.tag }}"
-
-      # https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package
-      # Publish NuGet package to nuget.org if this is a version tag on the main branch
-      - name: 🚀 Publish NuGet package
-        if: ${{ steps.tag_on_main.outputs.on_main == 'true' }}
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.API_KEY_NUGET }}
-        run: |
-          # NuGet.org
-          # --skip-duplicate prevents an error if this package version already exists.
-          # It cannot overwrite an existing package with the same version.
-          # Pushing the .nupkg file automatically pushes the associated .snupkg file.
-          dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg" \
-            --source "https://api.nuget.org/v3/index.json" \
-            --api-key "$NUGET_AUTH_TOKEN" \
-            --skip-duplicate
-          # GitHub Packages
-          #dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg"  --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
-          #dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.snupkg" --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
 
   #
   # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/using-conditions-to-control-job-execution

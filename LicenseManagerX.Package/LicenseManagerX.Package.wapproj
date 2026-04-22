@@ -106,8 +106,11 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LicenseManagerX.Console\LicenseManagerX.Console.csproj" />
-    <ProjectReference Include="..\LicenseManagerX\LicenseManagerX.csproj">
+    <ProjectReference Include="..\LicenseManagerX.Console\LicenseManagerX.Console.csproj">
+		 <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
+		 <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
+	 </ProjectReference>
+	 <ProjectReference Include="..\LicenseManagerX\LicenseManagerX.csproj">
       <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
       <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
     </ProjectReference>

@@ -171,28 +171,39 @@ if errorlevel 2 (
 ::
 
 echo.
-echo === DOTNET CLEAN ===
-dotnet clean "%PROJECT_NUGET_PATH%"
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet clean "%PROJECT_APP_PATH%"     --runtime win-x64
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet clean "%PROJECT_CONSOLE_PATH%" --runtime win-x64
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet clean "%PROJECT_TESTS_PATH%"
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet clean "%PROJECT_EXAMPLE_PATH%" --runtime win-x64
-if errorlevel 1 exit /b %ERRORLEVEL%
+REM echo === DOTNET CLEAN ===
+REM dotnet clean "%PROJECT_NUGET_PATH%"   --runtime win-x64
+REM if errorlevel 1 exit /b %ERRORLEVEL%
+REM dotnet clean "%PROJECT_APP_PATH%"     --runtime win-x64
+REM if errorlevel 1 exit /b %ERRORLEVEL%
+REM dotnet clean "%PROJECT_CONSOLE_PATH%" --runtime win-x64
+REM if errorlevel 1 exit /b %ERRORLEVEL%
+REM dotnet clean "%PROJECT_TESTS_PATH%"
+REM if errorlevel 1 exit /b %ERRORLEVEL%
+REM dotnet clean "%PROJECT_EXAMPLE_PATH%" --runtime win-x64
+REM if errorlevel 1 exit /b %ERRORLEVEL%
+echo === CLEAN ARTIFACTS DIRECTORY ===
+if exist "%ARTIFACTS_PATH%" (
+	echo Deleting "%ARTIFACTS_PATH%"...
+	rmdir /s /q "%ARTIFACTS_PATH%"
+	if exist "%ARTIFACTS_PATH%" (
+		echo Unable to delete "%ARTIFACTS_PATH%".
+		exit /b %ERRORLEVEL%
+	)
+)
 
 echo.
 echo === DOTNET RESTORE ===
-dotnet restore "%PROJECT_NUGET_PATH%"
+set PUBLISH_RESTORE_ARGS=--runtime win-x64 --property:PublishProtocol=FileSystem --property:SelfContained=false --property:PublishReadyToRun=false --property:PublishTrimmed=false --property:PublishSingleFile=true
+dotnet restore "%PROJECT_NUGET_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_APP_PATH%"     --runtime win-x64
+dotnet restore "%PROJECT_APP_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_CONSOLE_PATH%" --runtime win-x64
+dotnet restore "%PROJECT_CONSOLE_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 exit /b %ERRORLEVEL%
 dotnet restore "%PROJECT_TESTS_PATH%"
 if errorlevel 1 exit /b %ERRORLEVEL%
+rem Example is restored later with a local NuGet source to test the package.
 
 echo.
 echo === DOTNET BUILD RELEASE ===
@@ -299,7 +310,7 @@ echo.
 echo === RESTORE EXAMPLE (Local NuGet source) ===
 dotnet restore ^
 	"%PROJECT_EXAMPLE_PATH%" ^
-	--runtime win-x64 ^
+	%PUBLISH_RESTORE_ARGS% ^
 	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
 if errorlevel 1 (
 	call :cleanup_local_nuget
@@ -328,6 +339,15 @@ if exist "%TARGET_EXAMPLE_PATH%" (
 ::
 
 echo.
+echo === DOTNET RESTORE (Standalone publish graph) ===
+dotnet restore "%PROJECT_NUGET_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet restore "%PROJECT_APP_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet restore "%PROJECT_CONSOLE_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 exit /b %ERRORLEVEL%
+
+echo.
 echo === DOTNET PUBLISH (Standalone) ===
 dotnet publish ^
 	"%PROJECT_APP_PATH%" ^
@@ -345,7 +365,7 @@ dotnet publish ^
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet publish ^
-	"%PROJECT_EXAMPLE_PATH%" ^
+	"%PROJECT_CONSOLE_PATH%" ^
 	--configuration Release ^
 	--no-restore ^
 	--property:Platform=x64 ^
@@ -360,7 +380,7 @@ dotnet publish ^
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet publish ^
-	"%PROJECT_CONSOLE_PATH%" ^
+	"%PROJECT_EXAMPLE_PATH%" ^
 	--configuration Release ^
 	--no-restore ^
 	--property:Platform=x64 ^

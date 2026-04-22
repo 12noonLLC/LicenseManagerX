@@ -1,4 +1,3 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <Solution>
   <Configurations>
     <Configuration Name="Release" />
@@ -9,6 +8,7 @@
     <File Path=".github/instructions/csharp.instructions.md" />
     <File Path=".github/workflows/build.yml" />
     <File Path=".github/workflows/copilot-setup-steps.yml" />
+    <File Path=".github/workflows/publish-nuget.yml" />
     <File Path="devtools/BuildMsStore.cmd" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -33,7 +33,5 @@
     <BuildDependency Project="LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj" />
     <Platform Project="x64" />
   </Project>
-  <Project Path="LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj">
-    <Platform Project="AnyCPU" />
-  </Project>
+  <Project Path="LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj" />
 </Solution>
