@@ -53,7 +53,7 @@ public partial class MainWindow : Window
 
 		// Insert the product version into the title bar after the app name.
 		Shared.ApplicationInformation appInfo = new();
-		Title = $"{appInfo.Name} {appInfo.Version} by {appInfo.Company}";
+		Title = $"{appInfo.Name} {appInfo.VersionShort} by {appInfo.Company}";
 
 		TheLicenseManager.PropertyChanged += (s, e) =>
 		{

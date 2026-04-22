@@ -40,6 +40,9 @@ public class ApplicationInformation
 	/// <summary>Gets the file version of the executing assembly (e.g., "2.4.0.0").</summary>
 	public string FileVersion { get; private set; }
 
+	/// <summary>Gets the short product version without build revision or git hash (e.g., "2.4.0").</summary>
+	public string VersionShort { get; private set; }
+
 	/// <summary>Gets the product web site URL.</summary>
 	public string WebSiteURL { get; private set; } = @"https://12noon.com";
 
@@ -77,6 +80,7 @@ public class ApplicationInformation
 
 		FileTitle = AppExeInfo.FileDescription ?? string.Empty;
 		FileVersion = AppExeInfo.FileVersion ?? string.Empty;
+		VersionShort = new Version(FileVersion).ToString(3);
 	}
 
 
