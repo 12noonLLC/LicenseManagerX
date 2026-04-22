@@ -51,6 +51,10 @@ public partial class MainWindow : Window
 	{
 		InitializeComponent();
 
+		// Insert the product version into the title bar after the app name.
+		Shared.ApplicationInformation appInfo = new();
+		Title = $"{appInfo.Name} {appInfo.Version} by {appInfo.Company}";
+
 		TheLicenseManager.PropertyChanged += (s, e) =>
 		{
 			if (TheLicenseManager.IsKeypairDirty || TheLicenseManager.IsLicenseDirty)
