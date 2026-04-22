@@ -22,9 +22,9 @@
     <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
     <NoWarn>$(NoWarn);NU1702</NoWarn>
     <AppxPackageDir>C:\VSIntermediate\LicenseManagerX\AppPackages\</AppxPackageDir>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
     <EntryPointProjectUniqueName>..\LicenseManagerX\LicenseManagerX.csproj</EntryPointProjectUniqueName>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
@@ -103,10 +103,13 @@
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LicenseManagerX.Console\LicenseManagerX.Console.csproj" />
-    <ProjectReference Include="..\LicenseManagerX\LicenseManagerX.csproj" />
+    <ProjectReference Include="..\LicenseManagerX\LicenseManagerX.csproj">
+      <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
+      <PublishProfile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\OneDrive\Development\12noon\LicenseManagerX\LicenseManagerX\Properties\PublishProfiles\FolderProfile.Store.pubxml</PublishProfile>
+    </ProjectReference>
   </ItemGroup>
 </Project>

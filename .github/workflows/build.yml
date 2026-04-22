@@ -52,10 +52,10 @@ env:
   BUILD_CONFIGURATION: Release
 
   # Local Action constants
-  PUBLISH_FILES_PATH: ${{ github.workspace }}\release
-  PUBLISH_FILES_PATH_LINUX: ${{ github.workspace }}/release
   ARTIFACT_NAME: LicenseManagerX
   ARTIFACT_PACKAGE: package-licensemanagerx
+  PUBLISH_FILES_PATH:       ${{ github.workspace }}\release
+  PUBLISH_FILES_PATH_LINUX: ${{ github.workspace }}/release
 
 concurrency:
   group: licensemanagerx-${{ github.event_name }}
@@ -171,23 +171,23 @@ jobs:
       - &step_restore_nuget
         name: 📦 Restore NuGet packages
         run: |
-          dotnet restore ${{ env.PROJECT_APP_PATH }}     --runtime win-x64
-          dotnet restore ${{ env.PROJECT_TESTS_PATH }}
-          dotnet restore ${{ env.PROJECT_CLIENT_PATH }}  --runtime win-x64
-          dotnet restore ${{ env.PROJECT_CONSOLE_PATH }} --runtime win-x64
+          dotnet restore "${{ env.PROJECT_APP_PATH }}"     --runtime win-x64
+          dotnet restore "${{ env.PROJECT_TESTS_PATH }}"
+          dotnet restore "${{ env.PROJECT_CLIENT_PATH }}"  --runtime win-x64
+          dotnet restore "${{ env.PROJECT_CONSOLE_PATH }}" --runtime win-x64
 
       # Build NuGet package for all <TargetFrameworks>: .NET 8, 9, and 10
       - name: 🧩 Build NuGet package
         run: |
           dotnet build `
-            ${{ env.PROJECT_CLIENT_PATH }} `
+            "${{ env.PROJECT_CLIENT_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
       - name: 🪟 Build application
         run: |
           dotnet build `
-            ${{ env.PROJECT_APP_PATH }} `
+            "${{ env.PROJECT_APP_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
@@ -198,24 +198,24 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
           dotnet restore `
-            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            "${{ env.PROJECT_EXAMPLE_PATH }}" `
             --runtime win-x64
           dotnet build `
-            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            "${{ env.PROJECT_EXAMPLE_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
       - name: 📟️ Build Console application
         run: |
           dotnet build `
-            ${{ env.PROJECT_CONSOLE_PATH }} `
+            "${{ env.PROJECT_CONSOLE_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
       - name: 🏗 Build unit tests
         run: |
           dotnet build `
-            ${{ env.PROJECT_TESTS_PATH }} `
+            "${{ env.PROJECT_TESTS_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
@@ -223,7 +223,7 @@ jobs:
         timeout-minutes: 3
         run: |
           dotnet test `
-            --project ${{ env.PROJECT_TESTS_PATH }} `
+            --project "${{ env.PROJECT_TESTS_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore `
             --no-build `
@@ -244,10 +244,10 @@ jobs:
 
     steps:
       - *step_checkout
+      - *step_compare_versions
       - *step_setup_dotnet
       - *step_setup_msbuild
       - *step_restore_nuget
-      - *step_compare_versions
 
       # NUGET PACKAGE START
       #
@@ -258,10 +258,10 @@ jobs:
           # pack => .\artifacts\package\release\LicenseManager_12noon.Client.1.2.3.4.nupkg
           # No need to use --include-symbols because it is specified in the project file.
           dotnet pack `
-            ${{ env.PROJECT_CLIENT_PATH }} `
+            "${{ env.PROJECT_CLIENT_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore `
-            --output ${{ env.PUBLISH_FILES_PATH }}
+            --output "${{ env.PUBLISH_FILES_PATH }}"
 
       - name: 🔍 Display NuGet Manifest (.nuspec)
         shell: pwsh
@@ -293,11 +293,11 @@ jobs:
       - name: 📙️ Build Example Client application
         run: |
           dotnet restore `
-            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            "${{ env.PROJECT_EXAMPLE_PATH }}" `
             --runtime win-x64 `
             --configfile nuget.config
           dotnet build `
-            ${{ env.PROJECT_EXAMPLE_PATH }} `
+            "${{ env.PROJECT_EXAMPLE_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
       #
@@ -317,13 +317,13 @@ jobs:
             '--property:PublishSingleFile=true',
             '--property:PublishDir="${{ env.PUBLISH_FILES_PATH }}\local"'
           )
-          dotnet publish @commonArgs ${{ env.PROJECT_APP_PATH }}
-          dotnet publish @commonArgs ${{ env.PROJECT_EXAMPLE_PATH }}
-          dotnet publish @commonArgs ${{ env.PROJECT_CONSOLE_PATH }}
+          dotnet publish @commonArgs "${{ env.PROJECT_APP_PATH }}"
+          dotnet publish @commonArgs "${{ env.PROJECT_EXAMPLE_PATH }}"
+          dotnet publish @commonArgs "${{ env.PROJECT_CONSOLE_PATH }}"
 
       - name: 📂 Copy application license (.lic) to deployment folder
         run: |
-          Copy-Item -Destination ${{ env.PUBLISH_FILES_PATH }}\local -Path ${{ env.LICENSE_FILE_PATH }}
+          Copy-Item -Destination "${{ env.PUBLISH_FILES_PATH }}\local" -Path "${{ env.LICENSE_FILE_PATH }}"
 
       - name: 📦 Zip and delete standalone folder
         working-directory: ${{ env.PUBLISH_FILES_PATH_LINUX }}
@@ -336,7 +336,7 @@ jobs:
       - name: 🪟 Build MSIX bundle (.msixupload) for Microsoft Store
         run: |
           msbuild `
-            ${{ env.PROJECT_WAP_PATH }} `
+            "${{ env.PROJECT_WAP_PATH }}" `
             -property:Configuration=${{ env.BUILD_CONFIGURATION }} `
             -property:Platform=x64 `
             -property:UapAppxPackageBuildMode=StoreUpload `
@@ -349,7 +349,7 @@ jobs:
 
       - name: 📂 Copy extra files to deployment folder
         run: |
-          Copy-Item -Destination ${{ env.PUBLISH_FILES_PATH }} -Path LICENSE
+          Copy-Item -Destination "${{ env.PUBLISH_FILES_PATH }}" -Path LICENSE
 
       - name: 📤 Upload deployment folder
         uses: actions/upload-artifact@v7
@@ -408,7 +408,7 @@ jobs:
           path: ${{ env.PUBLISH_FILES_PATH_LINUX }}
 
       - name: 🗒️ List folder
-        run: ls -la ${{ env.PUBLISH_FILES_PATH_LINUX }}
+        run: ls -la "${{ env.PUBLISH_FILES_PATH_LINUX }}"
 
       - name: 🏷️ Get short SHA of the tag
         id: tag_sha
@@ -505,9 +505,7 @@ jobs:
           #prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           #
           # Note: To encourage installations from the Microsoft Store, do not upload build targets.
-          #
-          #files: ${{env.ARTIFACT_NAME}}.zip
-          #
+          #files: ${{ env.PUBLISH_FILES_PATH_LINUX }}/*
           generate_release_notes: true
           append_body: true
           body: |
@@ -531,13 +529,13 @@ jobs:
           # --skip-duplicate prevents an error if this package version already exists.
           # It cannot overwrite an existing package with the same version.
           # Pushing the .nupkg file automatically pushes the associated .snupkg file.
-          dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg \
+          dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg" \
             --source "https://api.nuget.org/v3/index.json" \
             --api-key "$NUGET_AUTH_TOKEN" \
             --skip-duplicate
           # GitHub Packages
-          #dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg  --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
-          #dotnet nuget push ${{ env.PUBLISH_FILES_PATH_LINUX }}/*.snupkg --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+          #dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.nupkg"  --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+          #dotnet nuget push "${{ env.PUBLISH_FILES_PATH_LINUX }}/*.snupkg" --api-key ${{ secrets.TOKEN_PACKAGES }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
 
   #
   # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/using-conditions-to-control-job-execution
@@ -551,6 +549,7 @@ jobs:
     needs: release
     if: ${{ always() }}
     runs-on: ubuntu-latest
+
     steps:
       # Delete publish artifact so it does not count against storage
       # https://github.com/marketplace/actions/delete-artifact

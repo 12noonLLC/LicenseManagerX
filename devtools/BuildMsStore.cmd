@@ -7,6 +7,8 @@ rem	Publish a standalone application.
 rem	Create an app bundle for the Microsoft Store.
 rem
 
+setlocal EnableExtensions EnableDelayedExpansion
+
 if NOT EXIST "LicenseManagerX.slnx" (
   echo Run this script from the solution folder.
   goto :EOF
@@ -22,7 +24,9 @@ echo    - Directory.Build.props
 echo    - Directory.Packages.props
 echo    - LicenseManagerX.Package\Package.appxmanifest
 
-setlocal EnableExtensions EnableDelayedExpansion
+::
+:: SETUP
+::
 
 set PROJECT=LicenseManagerX
 set ARCHIVE_NAME=%PROJECT%
@@ -159,18 +163,22 @@ if errorlevel 2 (
 )
 
 ::
-:: BUILD PROCESS
+:: BUILD
 ::
 
 echo.
 echo === DOTNET CLEAN ===
 dotnet clean "%PROJECT_APP_PATH%" --runtime win-x64
+if errorlevel 1 exit /b %ERRORLEVEL%
 dotnet clean "%PROJECT_TESTS_PATH%"
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET RESTORE ===
 dotnet restore "%PROJECT_APP_PATH%" --runtime win-x64
+if errorlevel 1 exit /b %ERRORLEVEL%
 dotnet restore "%PROJECT_TESTS_PATH%"
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET BUILD RELEASE ===
@@ -179,36 +187,53 @@ dotnet build ^
 	--configuration Release ^
 	--no-restore
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet build ^
 	"%PROJECT_APP_PATH%" ^
 	--configuration Release ^
 	--no-restore
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet build ^
 	"%PROJECT_EXAMPLE_PATH%" ^
 	--configuration Release ^
 	--no-restore
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet build ^
 	"%PROJECT_CONSOLE_PATH%" ^
 	--configuration Release ^
 	--no-restore
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === VERIFY TARGET PROPERTIES ===
-sigcheck.exe -nobanner "%TARGET_EXE_PATH%"
-sigcheck.exe -nobanner "%TARGET_CONSOLE_PATH%"
-sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
+if exist "%TARGET_EXE_PATH%" (
+	sigcheck.exe -nobanner "%TARGET_EXE_PATH%"
+) else (
+	echo File does not exist: "%TARGET_EXE_PATH%"
+	exit /b
+)
+if exist "%TARGET_CONSOLE_PATH%" (
+	sigcheck.exe -nobanner "%TARGET_CONSOLE_PATH%"
+) else (
+	echo File does not exist: "%TARGET_CONSOLE_PATH%"
+	exit /b
+)
+if exist "%TARGET_EXAMPLE_PATH%" (
+	sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
+) else (
+	echo File does not exist: "%TARGET_EXAMPLE_PATH%"
+	exit /b
+)
 
-if %ERRORLEVEL% neq 1 exit /b 1
+::
+:: TESTS
+::
 
 echo.
 echo === DOTNET BUILD UNIT TESTS ===
@@ -217,7 +242,7 @@ dotnet build ^
 	--configuration Release ^
 	--no-restore
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET TEST ===
@@ -230,7 +255,11 @@ dotnet test ^
 	--no-progress ^
 	--output detailed
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
+
+::
+:: PACK
+::
 
 echo.
 echo === DOTNET PACK (NuGet library) ===
@@ -242,7 +271,11 @@ dotnet pack ^
 	--no-build ^
 	--output "%PUBLISH_FILES_PATH%"
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
+
+::
+:: PUBLISH
+::
 
 echo.
 echo === DOTNET PUBLISH (Standalone) ===
@@ -259,7 +292,7 @@ dotnet publish ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet publish ^
 	"%PROJECT_EXAMPLE_PATH%" ^
@@ -274,7 +307,7 @@ dotnet publish ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet publish ^
 	"%PROJECT_CONSOLE_PATH%" ^
@@ -289,7 +322,7 @@ dotnet publish ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 pushd "%PUBLISH_FILES_PATH%"
 nanazipc.exe u -tzip "%BUILD_OUTPUT_ROOT%\%ARCHIVE_NAME%_%VERSION%.zip" *.*
@@ -305,7 +338,7 @@ echo === DOTNET PUBLISH (MS Store) ===
 	-property:AppxPackageDir="%PUBLISH_MSIX_PATH%" ^
 	-verbosity:quiet
 
-if %ERRORLEVEL% neq 0 exit /b 1
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo Publish successful.
 
