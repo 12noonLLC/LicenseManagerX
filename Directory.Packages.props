@@ -4,6 +4,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" />
+
 		<PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 
 		<PackageVersion Include="LicenseManager_12noon.Client" Version="2.4.0" />

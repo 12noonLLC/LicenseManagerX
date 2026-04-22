@@ -41,10 +41,11 @@ env:
 
   # Solution-specific files
   NUGET_PACKAGE_NAME:    LicenseManager_12noon.Client
-  PROJECT_CLIENT_PATH:   LicenseManager_12noon.Client\LicenseManager_12noon.Client.csproj
+  PROJECT_NUGET_PATH:    LicenseManager_12noon.Client\LicenseManager_12noon.Client.csproj
   PROJECT_CONSOLE_PATH:  LicenseManagerX.Console\LicenseManagerX.Console.csproj
   PROJECT_EXAMPLE_PATH:  LicenseManagerX_Example\LicenseManagerX_Example.csproj
   LICENSE_FILE_PATH:     LicenseManagerX_Example\LicenseManagerX_Example.lic
+  PRIVATE_FILE_PATH:     LicenseManagerX_Example\Secret\LicenseManagerX_Example.private
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
@@ -173,14 +174,14 @@ jobs:
         run: |
           dotnet restore "${{ env.PROJECT_APP_PATH }}"     --runtime win-x64
           dotnet restore "${{ env.PROJECT_TESTS_PATH }}"
-          dotnet restore "${{ env.PROJECT_CLIENT_PATH }}"  --runtime win-x64
+          dotnet restore "${{ env.PROJECT_NUGET_PATH }}"
           dotnet restore "${{ env.PROJECT_CONSOLE_PATH }}" --runtime win-x64
 
       # Build NuGet package for all <TargetFrameworks>: .NET 8, 9, and 10
       - name: 🧩 Build NuGet package
         run: |
           dotnet build `
-            "${{ env.PROJECT_CLIENT_PATH }}" `
+            "${{ env.PROJECT_NUGET_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore
 
@@ -192,8 +193,8 @@ jobs:
             --no-restore
 
       # Only build Example application if this is NOT a release tag.
-      # A release pre-bumps the Example app's NuGet dependency version, which cannot
-      # restore from NuGet.org until the package is published later in the workflow.
+      # A release requires the Example app's NuGet dependency version to be pre-bumped, so
+      # it cannot restore from NuGet.org until the package is published later in the workflow.
       - name: 📙️ Build Example Client application
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
@@ -258,7 +259,7 @@ jobs:
           # pack => .\artifacts\package\release\LicenseManager_12noon.Client.1.2.3.4.nupkg
           # No need to use --include-symbols because it is specified in the project file.
           dotnet pack `
-            "${{ env.PROJECT_CLIENT_PATH }}" `
+            "${{ env.PROJECT_NUGET_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore `
             --output "${{ env.PUBLISH_FILES_PATH }}"
@@ -284,7 +285,8 @@ jobs:
       - name: 🧩 Install NuGet package locally (not to the NuGet Gallery)
         run: |
           dotnet new nugetconfig --force
-          dotnet nuget add source "${{ env.PUBLISH_FILES_PATH }}" `
+          dotnet nuget add source `
+            "${{ env.PUBLISH_FILES_PATH }}" `
             --name LocalPackages `
             --configfile nuget.config
           dotnet nuget list source
@@ -321,9 +323,10 @@ jobs:
           dotnet publish @commonArgs "${{ env.PROJECT_EXAMPLE_PATH }}"
           dotnet publish @commonArgs "${{ env.PROJECT_CONSOLE_PATH }}"
 
-      - name: 📂 Copy application license (.lic) to deployment folder
+      - name: 📂 Copy application license files (.lic and .private) to deployment folder
         run: |
           Copy-Item -Destination "${{ env.PUBLISH_FILES_PATH }}\local" -Path "${{ env.LICENSE_FILE_PATH }}"
+          Copy-Item -Destination "${{ env.PUBLISH_FILES_PATH }}\local" -Path "${{ env.PRIVATE_FILE_PATH }}"
 
       - name: 📦 Zip and delete standalone folder
         working-directory: ${{ env.PUBLISH_FILES_PATH_LINUX }}

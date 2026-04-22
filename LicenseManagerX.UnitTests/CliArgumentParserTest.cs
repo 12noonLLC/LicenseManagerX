@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
+using System.Reflection;
 using Standard.Licensing;
 
 namespace LicenseManagerX.UnitTests;
@@ -14,6 +15,11 @@ public class CliArgumentParserTest
 
 	private string PathLicenseFile = string.Empty;
 	private string PathKeypairFile = string.Empty;
+	private string PathLockFile = string.Empty;
+
+	private static readonly MethodInfo RunCliModeMethod = typeof(App)
+		.GetMethod("RunCliMode", BindingFlags.NonPublic | BindingFlags.Static)
+		?? throw new InvalidOperationException("App.RunCliMode method not found.");
 
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
@@ -31,6 +37,7 @@ public class CliArgumentParserTest
 	{
 		PathLicenseFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_License);
 		PathKeypairFile = Path.Combine(PathTestFolder, TestContext.TestName + LicenseManager.FileExtension_PrivateKey);
+		PathLockFile = Path.Combine(PathTestFolder, TestContext.TestName + ".lock.txt");
 	}
 
 	[TestCleanup]
@@ -38,6 +45,7 @@ public class CliArgumentParserTest
 	{
 		File.Delete(PathLicenseFile);
 		File.Delete(PathKeypairFile);
+		File.Delete(PathLockFile);
 
 		// Reset culture to English
 		Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
@@ -742,5 +750,110 @@ public class CliArgumentParserTest
 
 		// Should not throw, even though license file exists
 		parser.Validate();
+	}
+
+	[TestMethod]
+	public void TestValidateRelativeLockPath_ResolvesAndValidatesFileExists()
+	{
+		string relativeFile = TestContext.TestName + ".relative-lock.txt";
+		File.WriteAllText(relativeFile, "lock content");
+		try
+		{
+			CliArgumentParser parser = CliArgumentParser.Parse([
+				"--private", PathKeypairFile,
+				"--license", PathLicenseFile,
+				"--lock", relativeFile,
+			]);
+
+			Assert.AreEqual(Path.GetFullPath(relativeFile), parser.LockPath);
+
+			File.WriteAllText(PathKeypairFile, "placeholder private file");
+			parser.Validate();
+		}
+		finally
+		{
+			File.Delete(relativeFile);
+		}
+	}
+
+	[TestMethod]
+	public void TestValidateLockPath_MissingFileThrows()
+	{
+		string missingLockPath = Path.Combine(PathTestFolder, TestContext.TestName + ".missing.lock");
+		File.WriteAllText(PathKeypairFile, "placeholder private file");
+
+		CliArgumentParser parser = new()
+		{
+			PrivateFilePath = PathKeypairFile,
+			LicenseFilePath = PathLicenseFile,
+			LockPath = missingLockPath,
+		};
+
+		Assert.ThrowsExactly<FileNotFoundException>(parser.Validate);
+	}
+
+	[TestMethod]
+	public void TestRunCliMode_DisplayOnly_ReturnsSuccessAndPrintsProductData()
+	{
+		CreateValidPrivateFile(PathKeypairFile);
+
+		StringWriter stdout = new();
+		TextWriter originalOut = Console.Out;
+		try
+		{
+			Console.SetOut(stdout);
+			int exitCode = InvokeRunCliMode(["--private", PathKeypairFile]);
+			Assert.AreEqual(0, exitCode);
+		}
+		finally
+		{
+			Console.SetOut(originalOut);
+		}
+
+		string output = stdout.ToString();
+		Assert.Contains("Product ID:", output);
+		Assert.Contains("Public key:", output);
+	}
+
+	[TestMethod]
+	public void TestRunCliMode_CreateLicense_ReturnsSuccessAndWritesLicenseFile()
+	{
+		CreateValidPrivateFile(PathKeypairFile);
+
+		int exitCode = InvokeRunCliMode([
+			"--private", PathKeypairFile,
+			"--license", PathLicenseFile,
+			"--type", "Trial",
+			"--expiration-days", "30",
+		]);
+
+		Assert.AreEqual(0, exitCode);
+		Assert.IsTrue(File.Exists(PathLicenseFile));
+	}
+
+	private static int InvokeRunCliMode(string[] args)
+	{
+		object? raw = RunCliModeMethod.Invoke(null, [args]);
+		if (raw is int exitCode)
+		{
+			return exitCode;
+		}
+
+		throw new InvalidOperationException("RunCliMode returned unexpected result.");
+	}
+
+	private static void CreateValidPrivateFile(string pathKeypair)
+	{
+		LicenseManager manager = new();
+		manager.Passphrase = "CLI integration test passphrase";
+		manager.CreateKeypair();
+		manager.ProductId = "CLI Integration Product";
+		manager.Product = "CLI Integration App";
+		manager.Version = "1.0.0";
+		manager.Quantity = 1;
+		manager.ExpirationDays = 0;
+		manager.Name = "CLI User";
+		manager.Email = "cli@example.com";
+		manager.SaveKeypair(pathKeypair);
 	}
 }

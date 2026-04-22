@@ -12,6 +12,15 @@
 This project ensures that software licenses are securely generated and validated,
 providing a robust mechanism for software protection.
 
+### Secret Model
+
+- `.private` files contain secret material (private key + passphrase context) and must be protected.
+- `.lic` files are intended for distribution to licensees.
+- Product ID and public key are not secrets.
+
+For this repository, the `.private` file inside `LicenseManagerX_Example` is intentionally included as an inspectable example only.
+Do not treat that as a general practice for real applications.
+
 **License Manager X** is a graphical front-end application designed to create and manage
 licenses for software applications using .NET.
 It leverages the [Standard.Licensing](https://github.com/junian/Standard.Licensing)
@@ -152,6 +161,9 @@ Do NOT add the `.private` file to source control.
 You will need it to create more licenses for your licensed application
 (unless you want to update the application to use a new public key).
 
+The only intentional exception in this repository is the example `.private` file under `LicenseManagerX_Example`,
+which exists only so users can inspect a sample end-to-end setup.
+
 ### Create a License Based on an Existing License
 
 1. Press the *Load Keypair or License or Both...* button to select a `.private` or
@@ -179,26 +191,27 @@ command line interface to generate new license files more efficiently.
 `lmx` is the Windows app execution alias for License Manager X. You can manage this in Windows Settings.
 
 ```cmd
-lmx --private <path> [--save | --license <path> | --save --license <path>] [options]
+lmx --private <path> [--save] [--license <path>] [options]
 ```
 
 #### Required Arguments
 
 - `--private, -p <path>` - Path to the `.private` file
 
-#### One or More Arguments is Required
+#### Display Keypair, Save Keypair, or Create License
 
-You must specify at least one of these switches. They may be used together.
-If you do not specify one of these, it only displays the properties from the keypair file.
+You can specify one or more of these switches.
+If you do not specify any of these, the CLI only displays the properties from the keypair file.
 
-- `--license, -l <path>` - Path to the new `.lic` file (will not overwrite unless --force)
-- `--save, -s` - Save the modified properties to the `.private` file
+- `--license, -l <path>` - Create a new `.lic` file (will not overwrite unless `--force` is used)
+- `--save, -s` - Write the specified values to the `.private` file
 
 #### Optional Arguments
 
+- `--help, -h` - Show help
 - `--force, -f` - Overwrite the license file if it already exists
 - `--product-version, -v <version>` - Product version
-- `--product-publish-date, -pd <date>` - Product publish date (YYYY-MM-DD)
+- `--product-publish-date, -pd <date>` - Product publish date (YYYY-MM-DD format)
 - `--product-features, -pf <pairs>` - Product features as key=value pairs
 - `--type, -t <Standard | Trial>` - License type
 - `--quantity, -q <number>` - License quantity (positive integer)
@@ -206,7 +219,6 @@ If you do not specify one of these, it only displays the properties from the key
 - `--expiration-date, -dt <date>` - Expiration date (YYYY-MM-DD format)
 - `--license-attributes, -la <pairs>` - License attributes as key=value pairs
 - `--lock <path>` - Lock license to a specific file (_e.g.,_ EXE or DLL)
-- `--help, -h` - Show help
 
 #### Examples
 

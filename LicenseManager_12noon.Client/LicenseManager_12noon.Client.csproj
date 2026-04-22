@@ -3,10 +3,8 @@
   <PropertyGroup>
     <RootNamespace>LicenseManager_12noon</RootNamespace>
     <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
-    <Platforms>x64</Platforms>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Title>12noon License Manager X Licensing For Applications</Title>
     <Description>This NuGet package enables a .NET application to use a simplified API for validating a license. It is forked from the Standard.Licensing project and fixes some of its issues. It is also an optional companion to the 12noon License Manager X application.</Description>

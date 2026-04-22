@@ -49,6 +49,10 @@ set PROJECT_CONSOLE_PATH=.\%PROJECT%.Console\%PROJECT%.Console.csproj
 set TARGET_EXAMPLE_PATH=%ARTIFACTS_PATH%\bin\%PROJECT%_Example\release_win-x64\%PROJECT%_Example.exe
 set TARGET_CONSOLE_PATH=%ARTIFACTS_PATH%\bin\%PROJECT%.Console\release_win-x64\%PROJECT%.Console.exe
 
+set LOCAL_NUGET_SOURCE_NAME=LocalPackages
+set LOCAL_NUGET_CONFIG_DIR=%BUILD_OUTPUT_ROOT%\nuget-temp
+set LOCAL_NUGET_CONFIG_PATH=%LOCAL_NUGET_CONFIG_DIR%\nuget.config
+
 ::
 :: LOCATE MSBuild.exe
 ::
@@ -168,14 +172,24 @@ if errorlevel 2 (
 
 echo.
 echo === DOTNET CLEAN ===
-dotnet clean "%PROJECT_APP_PATH%" --runtime win-x64
+dotnet clean "%PROJECT_NUGET_PATH%"
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet clean "%PROJECT_APP_PATH%"     --runtime win-x64
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet clean "%PROJECT_CONSOLE_PATH%" --runtime win-x64
 if errorlevel 1 exit /b %ERRORLEVEL%
 dotnet clean "%PROJECT_TESTS_PATH%"
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet clean "%PROJECT_EXAMPLE_PATH%" --runtime win-x64
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET RESTORE ===
-dotnet restore "%PROJECT_APP_PATH%" --runtime win-x64
+dotnet restore "%PROJECT_NUGET_PATH%"
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet restore "%PROJECT_APP_PATH%"     --runtime win-x64
+if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet restore "%PROJECT_CONSOLE_PATH%" --runtime win-x64
 if errorlevel 1 exit /b %ERRORLEVEL%
 dotnet restore "%PROJECT_TESTS_PATH%"
 if errorlevel 1 exit /b %ERRORLEVEL%
@@ -191,13 +205,6 @@ if errorlevel 1 exit /b %ERRORLEVEL%
 
 dotnet build ^
 	"%PROJECT_APP_PATH%" ^
-	--configuration Release ^
-	--no-restore
-
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-dotnet build ^
-	"%PROJECT_EXAMPLE_PATH%" ^
 	--configuration Release ^
 	--no-restore
 
@@ -222,12 +229,6 @@ if exist "%TARGET_CONSOLE_PATH%" (
 	sigcheck.exe -nobanner "%TARGET_CONSOLE_PATH%"
 ) else (
 	echo File does not exist: "%TARGET_CONSOLE_PATH%"
-	exit /b
-)
-if exist "%TARGET_EXAMPLE_PATH%" (
-	sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
-) else (
-	echo File does not exist: "%TARGET_EXAMPLE_PATH%"
 	exit /b
 )
 
@@ -258,11 +259,11 @@ dotnet test ^
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 ::
-:: PACK
+:: NUGET LIBRARY
 ::
 
 echo.
-echo === DOTNET PACK (NuGet library) ===
+echo === PACK (NuGet library) ===
 dotnet pack ^
 	"%PROJECT_NUGET_PATH%" ^
 	--configuration Release ^
@@ -272,6 +273,55 @@ dotnet pack ^
 	--output "%PUBLISH_FILES_PATH%"
 
 if errorlevel 1 exit /b %ERRORLEVEL%
+
+echo.
+echo === CREATE TEMP LOCAL NUGET SOURCE ===
+if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
+mkdir "%LOCAL_NUGET_CONFIG_DIR%"
+if errorlevel 1 exit /b %ERRORLEVEL%
+
+dotnet new nugetconfig --force --output "%LOCAL_NUGET_CONFIG_DIR%"
+if errorlevel 1 (
+	call :cleanup_local_nuget
+	exit /b %ERRORLEVEL%
+)
+
+dotnet nuget add source ^
+	"%PUBLISH_FILES_PATH%" ^
+	--name "%LOCAL_NUGET_SOURCE_NAME%" ^
+	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
+if errorlevel 1 (
+	call :cleanup_local_nuget
+	exit /b %ERRORLEVEL%
+)
+
+echo.
+echo === RESTORE EXAMPLE (Local NuGet source) ===
+dotnet restore ^
+	"%PROJECT_EXAMPLE_PATH%" ^
+	--runtime win-x64 ^
+	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
+if errorlevel 1 (
+	call :cleanup_local_nuget
+	exit /b %ERRORLEVEL%
+)
+
+echo.
+echo === BUILD EXAMPLE ===
+dotnet build ^
+	"%PROJECT_EXAMPLE_PATH%" ^
+	--configuration Release ^
+	--no-restore
+set BUILD_EXAMPLE_EXIT_CODE=%ERRORLEVEL%
+call :cleanup_local_nuget
+if not "%BUILD_EXAMPLE_EXIT_CODE%" == "0" exit /b %BUILD_EXAMPLE_EXIT_CODE%
+
+if exist "%TARGET_EXAMPLE_PATH%" (
+	sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
+) else (
+	echo File does not exist: "%TARGET_EXAMPLE_PATH%"
+	exit /b 1
+)
 
 ::
 :: PUBLISH
@@ -343,3 +393,14 @@ if errorlevel 1 exit /b %ERRORLEVEL%
 echo Publish successful.
 
 endlocal
+exit /b 0
+
+::
+:: Delete the temporary local NuGet source and config.
+::
+:cleanup_local_nuget
+if exist "%LOCAL_NUGET_CONFIG_PATH%" (
+	dotnet nuget remove source "%LOCAL_NUGET_SOURCE_NAME%" --configfile "%LOCAL_NUGET_CONFIG_PATH%" >nul 2>nul
+)
+if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
+exit /b 0
