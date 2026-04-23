@@ -90,7 +90,7 @@ public partial class LicenseFile
 		ArgumentException.ThrowIfNullOrWhiteSpace(productID);
 		ArgumentException.ThrowIfNullOrWhiteSpace(publicKey);
 
-		return IsThisLicenseValid(productID, publicKey, GetLicensePath(), GetAssemblyFilePath(), out messages);
+		return IsThisLicenseValid(productID, publicKey, GetLicensePath(), GetAssemblyPath(), out messages);
 	}
 
 	/// <summary>
@@ -286,14 +286,10 @@ public partial class LicenseFile
 		}
 	}
 
-	private static string GetLicensePath()
-	{
-		string pathExecutable = GetAssemblyFilePath();
-		return Path.ChangeExtension(pathExecutable, FileExtension_License);
-	}
+	private static string GetLicensePath() => Path.ChangeExtension(GetExePath(), FileExtension_License);
 
 	/// <summary>
-	/// Return the path to the main (entry) assembly (.exe).
+	/// Return the path to the main (entry) assembly (.exe/.dll).
 	/// </summary>
 	/// <example>
 	/// C:\Path\To\Executable.exe
@@ -301,11 +297,36 @@ public partial class LicenseFile
 	/// <see cref="Assembly.GetEntryAssembly" />
 	/// <seealso cref="Assembly.GetExecutingAssembly" />
 	/// <returns>Path to the main (entry) assembly (.exe)</returns>
-	private static string GetAssemblyFilePath()
+	private static string GetAssemblyPath() => GetExePath();
+
+	/// <summary>
+	/// Return the full path to the running EXE.
+	/// Uses <see cref="AppContext.BaseDirectory"/> for the directory (always reliable,
+	/// even in single-file publish) and derives the filename from
+	/// <see cref="Environment.ProcessPath"/> or <see cref="Assembly.Location"/> as a fallback.
+	/// </summary>
+	private static string GetExePath()
 	{
-		// AppContext.BaseDirectory is just the folder path (e.g., "C:\Path\To\").
-		Assembly? asm = Assembly.GetEntryAssembly();
-		return asm?.Location ?? string.Empty;
+		// AppContext.BaseDirectory is always the folder containing the EXE, even in single-file publish.
+		string directory = AppContext.BaseDirectory;
+
+		// Prefer Environment.ProcessPath for the filename (works in single-file publish).
+		string? processPath = Environment.ProcessPath;
+		if (!string.IsNullOrWhiteSpace(processPath))
+		{
+			return Path.Combine(directory, Path.GetFileName(processPath));
+		}
+
+		// Fallback: entry assembly location filename (works in non-single-file publish).
+#pragma warning disable IL3000 // Assembly.Location always returns empty string for assemblies embedded in a single-file app.
+		string? assemblyLocation = Assembly.GetEntryAssembly()?.Location;
+#pragma warning restore IL3000
+		if (!string.IsNullOrWhiteSpace(assemblyLocation))
+		{
+			return Path.Combine(directory, Path.GetFileName(assemblyLocation));
+		}
+
+		throw new InvalidOperationException("Unable to resolve entry assembly path.");
 	}
 
 	/// <summary>

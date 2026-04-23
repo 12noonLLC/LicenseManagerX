@@ -43,6 +43,7 @@ set PROJECT_WAP_DIR=.\%PROJECT%.Package
 set PROJECT_WAP_PATH=%PROJECT_WAP_DIR%\%PROJECT%.Package.wapproj
 set PROJECT_MANIFEST_PATH=%PROJECT_WAP_DIR%\Package.appxmanifest
 
+set PROJECT_NUGET_NAME=LicenseManager_12noon.Client
 set PROJECT_NUGET_PATH=LicenseManager_12noon.Client\LicenseManager_12noon.Client.csproj
 set PROJECT_EXAMPLE_PATH=.\%PROJECT%_Example\%PROJECT%_Example.csproj
 set PROJECT_CONSOLE_PATH=.\%PROJECT%.Console\%PROJECT%.Console.csproj
@@ -115,7 +116,7 @@ rem === 4. Extract Version from Directory.Package.props ===
 for /f "usebackq delims=" %%V in (`
 	powershell -NoLogo -NoProfile -Command ^
 		"[xml]$x = Get-Content '%DIRECTORY_PACKAGES_PROPS%';" ^
-		"$node = $x.Project.ItemGroup.PackageVersion | Where-Object { $_.Include -eq 'LicenseManager_12noon.Client' };" ^
+		"$node = $x.Project.ItemGroup.PackageVersion | Where-Object { $_.Include -eq '%PROJECT_NUGET_NAME%' };" ^
 		"if ($node) { $node.Version }"
 `) do set "NUGET_VERSION=%%V"
 
@@ -167,21 +168,10 @@ if errorlevel 2 (
 )
 
 ::
-:: BUILD
+:: STEP 1: Build NuGet library and add to local source
 ::
 
 echo.
-REM echo === DOTNET CLEAN ===
-REM dotnet clean "%PROJECT_NUGET_PATH%"   --runtime win-x64
-REM if errorlevel 1 exit /b %ERRORLEVEL%
-REM dotnet clean "%PROJECT_APP_PATH%"     --runtime win-x64
-REM if errorlevel 1 exit /b %ERRORLEVEL%
-REM dotnet clean "%PROJECT_CONSOLE_PATH%" --runtime win-x64
-REM if errorlevel 1 exit /b %ERRORLEVEL%
-REM dotnet clean "%PROJECT_TESTS_PATH%"
-REM if errorlevel 1 exit /b %ERRORLEVEL%
-REM dotnet clean "%PROJECT_EXAMPLE_PATH%" --runtime win-x64
-REM if errorlevel 1 exit /b %ERRORLEVEL%
 echo === CLEAN ARTIFACTS DIRECTORY ===
 if exist "%ARTIFACTS_PATH%" (
 	echo Deleting "%ARTIFACTS_PATH%"...
@@ -192,41 +182,80 @@ if exist "%ARTIFACTS_PATH%" (
 	)
 )
 
-echo.
-echo === DOTNET RESTORE ===
 set PUBLISH_RESTORE_ARGS=--runtime win-x64 --property:PublishProtocol=FileSystem --property:SelfContained=false --property:PublishReadyToRun=false --property:PublishTrimmed=false --property:PublishSingleFile=true
+
+echo.
+echo === DOTNET RESTORE (NuGet library) ===
 dotnet restore "%PROJECT_NUGET_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_APP_PATH%" %PUBLISH_RESTORE_ARGS%
+
+echo.
+echo === DOTNET BUILD (NuGet library) ===
+dotnet build "%PROJECT_NUGET_PATH%" --configuration Release --no-restore
 if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_CONSOLE_PATH%" %PUBLISH_RESTORE_ARGS%
+
+echo.
+echo === PACK (NuGet library) ===
+dotnet pack ^
+	"%PROJECT_NUGET_PATH%" ^
+	--configuration Release ^
+	--version %VERSION% ^
+	--no-restore ^
+	--no-build ^
+	--output "%PUBLISH_FILES_PATH%"
 if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_TESTS_PATH%"
+
+echo.
+echo === CLEAR STALE NUGET CACHE FOR LOCAL PACKAGE ===
+if exist "%USERPROFILE%\.nuget\packages\%PROJECT_NUGET_NAME%\%VERSION%" (
+	rmdir /s /q "%USERPROFILE%\.nuget\packages\%PROJECT_NUGET_NAME%\%VERSION%"
+)
+
+echo.
+echo === CREATE TEMP LOCAL NUGET SOURCE ===
+if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
+mkdir "%LOCAL_NUGET_CONFIG_DIR%"
 if errorlevel 1 exit /b %ERRORLEVEL%
-rem Example is restored later with a local NuGet source to test the package.
+
+dotnet new nugetconfig --force --output "%LOCAL_NUGET_CONFIG_DIR%"
+if errorlevel 1 goto :CleanUpAndExit
+
+dotnet nuget add source ^
+	"%PUBLISH_FILES_PATH%" ^
+	--name "%LOCAL_NUGET_SOURCE_NAME%" ^
+	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
+if errorlevel 1 goto :CleanUpAndExit
+
+::
+:: STEP 2: Restore (all projects, using local NuGet source)
+::
+
+echo.
+echo === DOTNET RESTORE ===
+rem Restore NuGet project again with RID so that the app (which depends on its project) will build.
+dotnet restore "%PROJECT_NUGET_PATH%"   --configfile "%LOCAL_NUGET_CONFIG_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 goto :CleanUpAndExit
+dotnet restore "%PROJECT_APP_PATH%"     --configfile "%LOCAL_NUGET_CONFIG_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 goto :CleanUpAndExit
+dotnet restore "%PROJECT_CONSOLE_PATH%" --configfile "%LOCAL_NUGET_CONFIG_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 goto :CleanUpAndExit
+dotnet restore "%PROJECT_TESTS_PATH%"   --configfile "%LOCAL_NUGET_CONFIG_PATH%"
+if errorlevel 1 goto :CleanUpAndExit
+dotnet restore "%PROJECT_EXAMPLE_PATH%" --configfile "%LOCAL_NUGET_CONFIG_PATH%" %PUBLISH_RESTORE_ARGS%
+if errorlevel 1 goto :CleanUpAndExit
+
+::
+:: STEP 3: Build
+::
 
 echo.
 echo === DOTNET BUILD RELEASE ===
-dotnet build ^
-	"%PROJECT_NUGET_PATH%" ^
-	--configuration Release ^
-	--no-restore
-
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-dotnet build ^
-	"%PROJECT_APP_PATH%" ^
-	--configuration Release ^
-	--no-restore
-
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-dotnet build ^
-	"%PROJECT_CONSOLE_PATH%" ^
-	--configuration Release ^
-	--no-restore
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet build "%PROJECT_APP_PATH%"     --configuration Release --no-restore
+if errorlevel 1 goto :CleanUpAndExit
+dotnet build "%PROJECT_CONSOLE_PATH%" --configuration Release --no-restore
+if errorlevel 1 goto :CleanUpAndExit
+dotnet build "%PROJECT_EXAMPLE_PATH%" --configuration Release --no-restore
+if errorlevel 1 goto :CleanUpAndExit
 
 echo.
 echo === VERIFY TARGET PROPERTIES ===
@@ -234,27 +263,29 @@ if exist "%TARGET_EXE_PATH%" (
 	sigcheck.exe -nobanner "%TARGET_EXE_PATH%"
 ) else (
 	echo File does not exist: "%TARGET_EXE_PATH%"
-	exit /b
+	goto :CleanUpAndExit
 )
 if exist "%TARGET_CONSOLE_PATH%" (
 	sigcheck.exe -nobanner "%TARGET_CONSOLE_PATH%"
 ) else (
 	echo File does not exist: "%TARGET_CONSOLE_PATH%"
-	exit /b
+	goto :CleanUpAndExit
+)
+if exist "%TARGET_EXAMPLE_PATH%" (
+	sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
+) else (
+	echo File does not exist: "%TARGET_EXAMPLE_PATH%"
+	goto :CleanUpAndExit
 )
 
 ::
-:: TESTS
+:: STEP 4: Run tests
 ::
 
 echo.
 echo === DOTNET BUILD UNIT TESTS ===
-dotnet build ^
-	"%PROJECT_TESTS_PATH%" ^
-	--configuration Release ^
-	--no-restore
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+dotnet build "%PROJECT_TESTS_PATH%" --configuration Release --no-restore
+if errorlevel 1 goto :CleanUpAndExit
 
 echo.
 echo === DOTNET TEST ===
@@ -266,86 +297,11 @@ dotnet test ^
 	--no-ansi ^
 	--no-progress ^
 	--output detailed
-
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-::
-:: NUGET LIBRARY
-::
-
-echo.
-echo === PACK (NuGet library) ===
-dotnet pack ^
-	"%PROJECT_NUGET_PATH%" ^
-	--configuration Release ^
-	--version %VERSION% ^
-	--no-restore ^
-	--no-build ^
-	--output "%PUBLISH_FILES_PATH%"
-
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-echo.
-echo === CREATE TEMP LOCAL NUGET SOURCE ===
-if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
-mkdir "%LOCAL_NUGET_CONFIG_DIR%"
-if errorlevel 1 exit /b %ERRORLEVEL%
-
-dotnet new nugetconfig --force --output "%LOCAL_NUGET_CONFIG_DIR%"
-if errorlevel 1 (
-	call :cleanup_local_nuget
-	exit /b %ERRORLEVEL%
-)
-
-dotnet nuget add source ^
-	"%PUBLISH_FILES_PATH%" ^
-	--name "%LOCAL_NUGET_SOURCE_NAME%" ^
-	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
-if errorlevel 1 (
-	call :cleanup_local_nuget
-	exit /b %ERRORLEVEL%
-)
-
-echo.
-echo === RESTORE EXAMPLE (Local NuGet source) ===
-dotnet restore ^
-	"%PROJECT_EXAMPLE_PATH%" ^
-	%PUBLISH_RESTORE_ARGS% ^
-	--configfile "%LOCAL_NUGET_CONFIG_PATH%"
-if errorlevel 1 (
-	call :cleanup_local_nuget
-	exit /b %ERRORLEVEL%
-)
-
-echo.
-echo === BUILD EXAMPLE ===
-dotnet build ^
-	"%PROJECT_EXAMPLE_PATH%" ^
-	--configuration Release ^
-	--no-restore
-set BUILD_EXAMPLE_EXIT_CODE=%ERRORLEVEL%
-call :cleanup_local_nuget
-if not "%BUILD_EXAMPLE_EXIT_CODE%" == "0" exit /b %BUILD_EXAMPLE_EXIT_CODE%
-
-if exist "%TARGET_EXAMPLE_PATH%" (
-	sigcheck.exe -nobanner "%TARGET_EXAMPLE_PATH%"
-) else (
-	echo File does not exist: "%TARGET_EXAMPLE_PATH%"
-	exit /b 1
-)
+if errorlevel 1 goto :CleanUpAndExit
 
 ::
-:: PUBLISH
+:: STEP 5: Publish
 ::
-
-echo.
-echo === DOTNET RESTORE (Standalone publish graph) ===
-dotnet restore "%PROJECT_NUGET_PATH%" %PUBLISH_RESTORE_ARGS%
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_APP_PATH%" %PUBLISH_RESTORE_ARGS%
-if errorlevel 1 exit /b %ERRORLEVEL%
-dotnet restore "%PROJECT_CONSOLE_PATH%" %PUBLISH_RESTORE_ARGS%
-if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET PUBLISH (Standalone) ===
@@ -361,8 +317,7 @@ dotnet publish ^
 	--property:PublishTrimmed=false ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+if errorlevel 1 goto :CleanUpAndExit
 
 dotnet publish ^
 	"%PROJECT_CONSOLE_PATH%" ^
@@ -376,8 +331,7 @@ dotnet publish ^
 	--property:PublishTrimmed=false ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+if errorlevel 1 goto :CleanUpAndExit
 
 dotnet publish ^
 	"%PROJECT_EXAMPLE_PATH%" ^
@@ -391,8 +345,7 @@ dotnet publish ^
 	--property:PublishTrimmed=false ^
 	--property:PublishSingleFile=true ^
 	--property:PublishDir="%PUBLISH_FILES_PATH%"
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+if errorlevel 1 goto :CleanUpAndExit
 
 pushd "%PUBLISH_FILES_PATH%"
 nanazipc.exe u -tzip "%BUILD_OUTPUT_ROOT%\%ARCHIVE_NAME%_%VERSION%.zip" *.*
@@ -407,20 +360,17 @@ echo === DOTNET PUBLISH (MS Store) ===
 	-property:UapAppxPackageBuildMode=StoreUpload ^
 	-property:AppxPackageDir="%PUBLISH_MSIX_PATH%" ^
 	-verbosity:quiet
-
-if errorlevel 1 exit /b %ERRORLEVEL%
+if errorlevel 1 goto :CleanUpAndExit
 
 echo Publish successful.
 
-endlocal
-exit /b 0
+::
+:: STEP 6: Clean up local NuGet source
+::
 
-::
-:: Delete the temporary local NuGet source and config.
-::
-:cleanup_local_nuget
+:CleanUpAndExit
 if exist "%LOCAL_NUGET_CONFIG_PATH%" (
 	dotnet nuget remove source "%LOCAL_NUGET_SOURCE_NAME%" --configfile "%LOCAL_NUGET_CONFIG_PATH%" >nul 2>nul
 )
 if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
-exit /b 0
+endlocal

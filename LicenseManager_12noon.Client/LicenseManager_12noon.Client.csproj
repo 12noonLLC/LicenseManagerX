@@ -3,6 +3,7 @@
   <PropertyGroup>
     <RootNamespace>LicenseManager_12noon</RootNamespace>
     <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
