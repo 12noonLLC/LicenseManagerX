@@ -44,7 +44,20 @@ public partial class LicenseFile
 	 * These properties are set when a license has been validated.
 	 */
 	public LicenseType StandardOrTrial { get; private set; } = LicenseType.Standard;
-	public DateTime ExpirationDateUTC { get; private set; } = DateTime.MaxValue.Date;
+	public DateOnly ExpirationDate { get; private set; } = DateOnly.MaxValue;
+	[Obsolete("Use ExpirationDate instead. ExpirationDateUTC is kept for backward compatibility and will be removed in a future version.")]
+	public DateTime ExpirationDateUTC
+	{
+		get
+		{
+			if (ExpirationDate == DateOnly.MaxValue)
+			{
+				return DateTime.MaxValue;
+			}
+
+			return ExpirationDate.ToDateTime(TimeOnly.MinValue);
+		}
+	}
 	public int ExpirationDays { get; private set; }
 	public int Quantity { get; private set; } = 1;
 
@@ -123,7 +136,7 @@ public partial class LicenseFile
 		PublishDate = null;
 
 		StandardOrTrial = LicenseType.Trial;
-		ExpirationDateUTC = DateTime.MaxValue.Date;
+		ExpirationDate = DateOnly.MaxValue;
 		ExpirationDays = 0;
 		Quantity = 1;
 
@@ -180,8 +193,9 @@ public partial class LicenseFile
 			IEnumerable<IValidationFailure> loadErrors =
 				license
 					.Validate()
-					// ExpirationDate() compares Expiration property (which is UTC but Kind=Utc) with passed date/time.
-					.ExpirationDate(MyNow.UtcNow())
+					// ExpirationDate() compares local calendar dates (date-only semantics).
+					// Use today's local date directly. The license is invalid on the expiration date.
+					.ExpirationDate(DateTime.SpecifyKind(DateOnly.FromDateTime(MyNow.Now()).ToDateTime(new()), DateTimeKind.Local))
 					.When(lic => !string.IsNullOrEmpty(expirationDays))
 					// Only check the expiry WHEN the license is Trial.
 					// https://github.com/junian/Standard.Licensing/issues/21
@@ -254,10 +268,9 @@ public partial class LicenseFile
 			// If the expiration date is set, get the number of days REMAINING until expiry.
 			if (license.Expiration.Date != DateTime.MaxValue.Date)
 			{
-				// Expiration property is UTC.
-				ExpirationDateUTC = license.Expiration.Date;
-				ExpirationDateUTC = DateTime.SpecifyKind(ExpirationDateUTC, DateTimeKind.Utc);
-				ExpirationDays = Convert.ToInt32(ExpirationDateUTC.Subtract(MyNow.UtcNow().Date).TotalDays);
+				// Expiration is interpreted as date-only; take the calendar date component.
+				ExpirationDate = DateOnly.FromDateTime(license.Expiration);
+				ExpirationDays = (int)(ExpirationDate.ToDateTime(new()) - DateOnly.FromDateTime(MyNow.Now()).ToDateTime(new())).TotalDays;
 			}
 			/// This is the number of days until expiration ORIGINALLY specified.
 			//if (!string.IsNullOrEmpty(expirationDays))

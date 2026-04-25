@@ -11,10 +11,7 @@ License Manager X is a .NET-based license management application for creating an
 
 The project uses the Standard.Licensing library for cryptographic license generation and validation.
 
-**Platform Requirements**: This project targets Windows (win-x64) due to WPF and Windows-specific components.
-Build and test commands require a Windows environment.
-However, prefer keeping the LicenseManager_12noon.Client package platform-neutral unless
-a Windows-specific target is technically required by the build or publish graph.
+**Platform Requirements**: This project targets Windows (win-x64) due to WPF and Windows-specific components. Build and test commands require a Windows environment. However, prefer keeping the LicenseManager_12noon.Client package platform-neutral unless a Windows-specific target is technically required by the build or publish graph.
 
 ## Build and Test Commands
 
@@ -56,6 +53,8 @@ dotnet pack LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --c
 - Write unit tests for new functionality. Use table-driven unit tests when possible.
 - Document complex logic. Suggest changes to the `README.md` when appropriate.
 - Do not delete existing comments.
+- Use a consistent date parsing/formatting behavior across files, specifically using an explicit shared expiration-date format constant (`yyyy-MM-dd`) rather than mixed default parsing/formatting behavior.
+- Simplify date handling by using `DateOnly.FromDateTime(MyNow.Now())` instead of `DateOnly.FromDateTime(MyNow.Now().Date)`.
 
 ### C# Code Style
 - Prefer to use explicit type instead of var. Example: `string s = new();`

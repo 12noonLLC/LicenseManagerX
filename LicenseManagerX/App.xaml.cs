@@ -194,7 +194,7 @@ public partial class App : Application
 		Console.WriteLine($"Quantity: {displayManager.Quantity}");
 		if (displayManager.ExpirationDays > 0)
 		{
-			Console.WriteLine($"Expiration days: {displayManager.ExpirationDays} ({((displayManager.ExpirationDateUTC == DateTime.MaxValue.Date) ? "None" : displayManager.ExpirationDateUTC):D})");
+			Console.WriteLine($"Expiration days: {displayManager.ExpirationDays} ({((displayManager.ExpirationDate == DateOnly.MaxValue) ? "None" : displayManager.ExpirationDate):yyyy-MM-dd})");
 		}
 		if (displayManager.LicenseAttributes.Count > 0)
 		{
@@ -246,7 +246,7 @@ public partial class App : Application
 		}
 		if (parsedArgs.ExpirationDate.HasValue)
 		{
-			Console.WriteLine($"  Expiration Date: {manager.ExpirationDateUTC:yyyy-MM-dd}");
+			Console.WriteLine($"  Expiration Date: {manager.ExpirationDate:yyyy-MM-dd}");
 		}
 		if (parsedArgs.LicenseAttributes.Count > 0)
 		{

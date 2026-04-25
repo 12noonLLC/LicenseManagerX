@@ -39,7 +39,7 @@ public partial class MainWindow : Window
 		{
 			LicenseType = App.License.StandardOrTrial.ToString();
 			// Alternative: (App.License.ExpirationDateUTC == DateTime.MaxValue.Date)
-			ExpirationDate = (App.License.ExpirationDays == 0) ? "Never" : (App.License.ExpirationDateUTC.ToString("D") ?? "None");
+			ExpirationDate = (App.License.ExpirationDays == 0) ? "Never" : (App.License.ExpirationDate.ToString("D") ?? "None");
 			ExpirationDays = App.License.ExpirationDays;
 			Quantity = App.License.Quantity;
 			Product = App.License.Product;

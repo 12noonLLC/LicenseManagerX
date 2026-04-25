@@ -1,6 +1,7 @@
 ﻿using LicenseManager_12noon.Client;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Standard.Licensing;
+using System.Text;
 
 namespace LicenseManagerX.UnitTests;
 
@@ -38,6 +39,9 @@ public class CreateLicenseTest
 		// Reset culture to English
 		Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 		Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
+
+		MyNow.UtcNow = () => DateTime.UtcNow;
+		MyNow.Now = () => MyNow.UtcNow().ToLocalTime();
 	}
 
 
@@ -273,7 +277,7 @@ public class CreateLicenseTest
 		// Local time
 		DateOnly DatePublished = new(DateTimeOffset.Now.Year, DateTimeOffset.Now.Month, DateTimeOffset.Now.Day);
 		const int EXPIRATION_DAYS = 10;
-		DateTime EXPIRATION_DATE = MyNow.UtcNow().Date.AddDays(EXPIRATION_DAYS);
+		DateOnly EXPIRATION_DATE = DateOnly.FromDateTime(MyNow.Now()).AddDays(EXPIRATION_DAYS);
 		const int PRODUCT_QUANTITY = 15;
 		const string LICENSEE_NAME = "John Doe";
 		const string LICENSEE_EMAIL = "john.doe@outlook.com";
@@ -285,7 +289,7 @@ public class CreateLicenseTest
 		manager.Product = PRODUCT_NAME;
 		manager.Version = VERSION;
 		manager.PublishDate = DatePublished;
-		manager.ExpirationDateUTC = EXPIRATION_DATE;
+		manager.ExpirationDate = EXPIRATION_DATE;
 		manager.ExpirationDays = EXPIRATION_DAYS;
 		manager.Quantity = PRODUCT_QUANTITY;
 		manager.Name = LICENSEE_NAME;
@@ -311,7 +315,7 @@ public class CreateLicenseTest
 		Assert.AreEqual(PRODUCT_NAME, manager.Product);
 		Assert.AreEqual(VERSION, manager.Version);
 		Assert.AreEqual(DatePublished, manager.PublishDate);
-		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDateUTC);
+		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDate);
 		Assert.AreEqual(EXPIRATION_DAYS, manager.ExpirationDays);
 		Assert.AreEqual(PRODUCT_QUANTITY, manager.Quantity);
 		Assert.AreEqual(LICENSEE_NAME, manager.Name);
@@ -406,7 +410,7 @@ public class CreateLicenseTest
 		// Local time
 		DateOnly DatePublished = new(DateTimeOffset.Now.Year, DateTimeOffset.Now.Month, DateTimeOffset.Now.Day);
 		const int EXPIRATION_DAYS = 10;
-		DateTime EXPIRATION_DATE = MyNow.UtcNow().Date.AddDays(EXPIRATION_DAYS);
+		DateOnly EXPIRATION_DATE = DateOnly.FromDateTime(MyNow.Now()).AddDays(EXPIRATION_DAYS);
 		const int PRODUCT_QUANTITY = 15;
 		const string LICENSEE_NAME = "John Doe";
 		const string LICENSEE_EMAIL = "john.doe@outlook.com";
@@ -418,7 +422,7 @@ public class CreateLicenseTest
 		manager.Product = PRODUCT_NAME;
 		manager.Version = VERSION;
 		manager.PublishDate = DatePublished;
-		manager.ExpirationDateUTC = EXPIRATION_DATE;
+		manager.ExpirationDate = EXPIRATION_DATE;
 		manager.ExpirationDays = EXPIRATION_DAYS;
 		manager.Quantity = PRODUCT_QUANTITY;
 		manager.Name = LICENSEE_NAME;
@@ -445,7 +449,7 @@ public class CreateLicenseTest
 		Assert.AreEqual(PRODUCT_NAME, manager.Product);
 		Assert.AreEqual(VERSION, manager.Version);
 		Assert.AreEqual(DatePublished, manager.PublishDate);
-		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDateUTC);
+		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDate);
 		Assert.AreEqual(EXPIRATION_DAYS, manager.ExpirationDays);
 		Assert.AreEqual(PRODUCT_QUANTITY, manager.Quantity);
 		Assert.AreEqual(LICENSEE_NAME, manager.Name);
@@ -492,11 +496,14 @@ public class CreateLicenseTest
 
 		const string PRODUCT_ID = "Badger Product ID";
 
-		///
-		/// 1 day => not expired
-		///
 		manager.ProductId = PRODUCT_ID;
+
+		DateTime baseLocalNow = new(DateTime.UtcNow.Year + 1, 4, 10, 12, 0, 0, DateTimeKind.Unspecified);
+		MyNow.UtcNow = () => baseLocalNow.ToUniversalTime();
+		MyNow.Now = () => baseLocalNow;
+
 		manager.ExpirationDays = 1;
+		DateOnly expectedExpirationDate = DateOnly.FromDateTime(baseLocalNow).AddDays(manager.ExpirationDays);
 
 		/// Act
 		/// Create license
@@ -505,12 +512,22 @@ public class CreateLicenseTest
 
 		string publicKey = manager.KeyPublic;
 
-		/// Assert
-		/// Validate license
+		/// Assert - day before expiration should be valid
+		DateTime testTime = expectedExpirationDate.ToDateTime(new()).AddDays(-1).AddHours(12);
+		MyNow.UtcNow = () => testTime.ToUniversalTime();
+		MyNow.Now = () => testTime;
 		manager = new();
 		bool isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out string errorMessages);
 		Assert.IsTrue(isValid);
 		Assert.IsFalse(string.IsNullOrEmpty(errorMessages), "Some properties have changed from the default.");
+
+		/// Assert - expiration date at local midnight should be invalid
+		testTime = expectedExpirationDate.ToDateTime(new());
+		MyNow.UtcNow = () => testTime.ToUniversalTime();
+		MyNow.Now = () => testTime;
+		manager = new();
+		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out errorMessages);
+		Assert.IsFalse(isValid, "License should be invalid starting at local midnight on the expiration date.");
 	}
 
 	[TestMethod]
@@ -537,6 +554,32 @@ public class CreateLicenseTest
 	[TestMethod]
 	public void TestExpirationPast()
 	{
+		/// Test expiration with UTC+0 timezone
+		TestExpirationPastWithOffset(TimeSpan.Zero, "UTC+0");
+	}
+
+	[TestMethod]
+	public void TestExpirationPastWithPositiveOffset()
+	{
+		/// Test expiration with UTC+1 timezone (local time ahead of UTC)
+		TestExpirationPastWithOffset(TimeSpan.FromHours(1), "UTC+1");
+	}
+
+	[TestMethod]
+	public void TestExpirationPastWithNegativeOffset()
+	{
+		/// Test expiration with UTC-5 timezone (local time behind UTC)
+		TestExpirationPastWithOffset(TimeSpan.FromHours(-5), "UTC-5");
+	}
+
+	/// <summary>
+	/// Test expiration boundary conditions with a specific timezone offset.
+	/// Verifies that expiration dates work correctly across different timezones.
+	/// </summary>
+	/// <param name="offset">Local time offset from UTC</param>
+	/// <param name="timezoneName">Name of timezone for test identification</param>
+	private void TestExpirationPastWithOffset(TimeSpan offset, string timezoneName)
+	{
 		/// Arrange
 		// Create keypair
 		LicenseManagerX.LicenseManager manager = CreateLicenseManager("Rebum vel ipsum magna labore amet elitr dolor ea.");
@@ -545,15 +588,19 @@ public class CreateLicenseTest
 
 		manager.ProductId = PRODUCT_ID;
 
-		///
-		/// Now is (next year) 20xx-04-10 15:30 UTC.
-		///
-		DateTime now = new(DateTime.UtcNow.Year + 1, 4, 10, 15, 30, 00, DateTimeKind.Utc);
-		MyNow.UtcNow = () => now;
+		/// Set current time: April 10, 15:30 UTC
+		DateTime baseUtcNow = new(DateTime.UtcNow.Year + 1, 4, 10, 15, 30, 00, DateTimeKind.Utc);
+		DateTime baseLocalNow = baseUtcNow.Add(offset);
+		MyNow.UtcNow = () => baseUtcNow;
+		MyNow.Now = () => baseLocalNow;
+
 		///
 		/// License expiry is in 2 days. It is valid on April 10 and 11 but not April 12 00:00:00.
 		///
+		/// Set expiration 2 days from now (local date)
+		/// When we create the license, it should expire at midnight local on the expiration date
 		manager.ExpirationDays = 2;
+		DateOnly expectedExpirationDate = DateOnly.FromDateTime(baseLocalNow).AddDays(manager.ExpirationDays);
 
 		/// Act
 		/// Create license
@@ -562,87 +609,47 @@ public class CreateLicenseTest
 
 		string publicKey = manager.KeyPublic;
 
-		/// Assert
-
-		/// April 10 VALID
-
-		/// Validate license today Apr 10 one minute before midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(1).AddMinutes(-1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 10, 23, 59, 00, DateTimeKind.Utc), MyNow.UtcNow());
+		/// Assert - One hour before expiration date should be valid
+		DateTime testTime = expectedExpirationDate.ToDateTime(new()).AddDays(-1).AddHours(23);
+		MyNow.UtcNow = () => testTime.Subtract(offset);
+		MyNow.Now = () => testTime;
 		manager = new();
 		bool isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out string messages);
-		Assert.IsTrue(isValid);
+		Assert.IsTrue(isValid, $"{timezoneName}: One hour before expiration date should be valid");
 		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
 
-		/// April 11 VALID
-
-		/// Validate license today Apr 10 midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 11, 00, 00, 00, DateTimeKind.Utc), MyNow.UtcNow());
+		/// Assert - One minute before expiration date should be valid
+		testTime = expectedExpirationDate.ToDateTime(new()).AddDays(-1).AddHours(23).AddMinutes(59);
+		MyNow.UtcNow = () => testTime.Subtract(offset);
+		MyNow.Now = () => testTime;
 		manager = new();
 		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsTrue(isValid);
+		Assert.IsTrue(isValid, $"{timezoneName}: One minute before expiration date should be valid");
 		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
 
-		/// Validate license tomorrow Apr 11 one minute after midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(1).AddMinutes(1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 11, 00, 01, 00, DateTimeKind.Utc), MyNow.UtcNow());
+		/// Assert - At midnight on expiration date should be expired
+		testTime = expectedExpirationDate.ToDateTime(new());
+		MyNow.UtcNow = () => testTime.Subtract(offset);
+		MyNow.Now = () => testTime;
 		manager = new();
 		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsTrue(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
+		Assert.IsFalse(isValid, $"{timezoneName}: At midnight on expiration date should be expired");
 
-		/// Validate license in tomorrow Apr 11 one minute before midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(2).AddMinutes(-1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 11, 23, 59, 00, DateTimeKind.Utc), MyNow.UtcNow());
+		/// Assert - One minute after midnight on expiration date should remain expired
+		testTime = expectedExpirationDate.ToDateTime(new()).AddMinutes(1);
+		MyNow.UtcNow = () => testTime.Subtract(offset);
+		MyNow.Now = () => testTime;
 		manager = new();
 		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsTrue(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
+		Assert.IsFalse(isValid, $"{timezoneName}: One minute after expiration should be expired");
 
-		/// April 12 INVALID
-
-		/// Validate license tomorrow Apr 11 at midnight (EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(2);
-		Assert.AreEqual(new DateTime(now.Year, 4, 12, 00, 00, 00, DateTimeKind.Utc), MyNow.UtcNow());
+		/// Assert - One hour after midnight on expiration date should remain expired
+		testTime = expectedExpirationDate.ToDateTime(new()).AddHours(1);
+		MyNow.UtcNow = () => testTime.Subtract(offset);
+		MyNow.Now = () => testTime;
 		manager = new();
 		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsFalse(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
-
-		/// Validate license day after tomorrow Apr 12 one minute after midnight (EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(2).AddMinutes(1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 12, 00, 01, 00, DateTimeKind.Utc), MyNow.UtcNow());
-		manager = new();
-		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsFalse(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
-
-		/// Validate license tomorrow Apr 12 one minute before midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(3).AddMinutes(-1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 12, 23, 59, 00, DateTimeKind.Utc), MyNow.UtcNow());
-		manager = new();
-		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsFalse(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
-
-		/// April 13 INVALID
-
-		/// Validate license tomorrow Apr 13 at midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(3);
-		Assert.AreEqual(new DateTime(now.Year, 4, 13, 00, 00, 00, DateTimeKind.Utc), MyNow.UtcNow());
-		manager = new();
-		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsFalse(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
-
-		/// Validate license day after tomorrow Apr 13 one minute after midnight (NOT EXPIRED)
-		MyNow.UtcNow = () => now.Date.AddDays(3).AddMinutes(1);
-		Assert.AreEqual(new DateTime(now.Year, 4, 13, 00, 01, 00, DateTimeKind.Utc), MyNow.UtcNow());
-		manager = new();
-		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
-		Assert.IsFalse(isValid);
-		Assert.IsFalse(string.IsNullOrEmpty(messages), "Some properties have changed from the default.");
+		Assert.IsFalse(isValid, $"{timezoneName}: One hour after expiration should be expired");
 	}
 
 	[TestMethod]
@@ -669,7 +676,7 @@ public class CreateLicenseTest
 
 		const LicenseType LICENSE_TYPE = LicenseType.Trial;
 		const int EXPIRATION_DAYS = 5;
-		DateTime EXPIRATION_DATE = MyNow.UtcNow().Date.AddDays(EXPIRATION_DAYS);
+		DateOnly EXPIRATION_DATE = DateOnly.FromDateTime(MyNow.Now()).AddDays(EXPIRATION_DAYS);
 		const int QUANTITY = 10;
 
 		const string PATH_ASSEMBLY = @"C:\Path\To\Product.exe";
@@ -686,7 +693,7 @@ public class CreateLicenseTest
 		manager.PublishDate = PUBLISH_DATE;
 
 		manager.StandardOrTrial = LICENSE_TYPE;
-		manager.ExpirationDateUTC = EXPIRATION_DATE;
+		manager.ExpirationDate = EXPIRATION_DATE;
 		manager.ExpirationDays = EXPIRATION_DAYS;
 		manager.Quantity = QUANTITY;
 
@@ -716,7 +723,7 @@ public class CreateLicenseTest
 		Assert.AreEqual(PUBLISH_DATE, manager.PublishDate);
 
 		Assert.AreEqual(LICENSE_TYPE, manager.StandardOrTrial);
-		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDateUTC);
+		Assert.AreEqual(EXPIRATION_DATE, manager.ExpirationDate);
 		Assert.AreEqual(EXPIRATION_DAYS, manager.ExpirationDays);
 		Assert.AreEqual(QUANTITY, manager.Quantity);
 
@@ -757,5 +764,173 @@ public class CreateLicenseTest
 		manager.LoadKeypair(PathKeypairFile);
 		Assert.IsFalse(manager.IsLockedToAssembly);
 		Assert.IsTrue(string.IsNullOrEmpty(manager.PathAssembly));
+	}
+
+	/// <summary>
+	/// Verify that ILicenseBuilder.ExpiresAt correctly handles UTC DateTime and generates
+	/// expected expiration date in the resulting license file.
+	/// </summary>
+	[TestMethod]
+	public void TestExpirationDateSerializationToLicenseFile()
+	{
+		/// Arrange
+		LicenseManagerX.LicenseManager manager = CreateLicenseManager("Tempor labore sea dolor amet vero tempor sed et vero.");
+
+		const string PRODUCT_ID = "Test Product ID";
+		manager.ProductId = PRODUCT_ID;
+
+		/// Set expiration to a specific date (e.g., April 15, 2025)
+		/// This date should be stored in the .lic file as-is
+		DateOnly expirationDate = new(DateTime.UtcNow.Year + 1, 4, 15);
+		manager.ExpirationDate = expirationDate;
+		manager.ExpirationDays = (int)(expirationDate.ToDateTime(new()) - DateOnly.FromDateTime(MyNow.Now().Date).ToDateTime(new())).TotalDays;
+
+		/// Act
+		manager.SaveLicenseFile(PathLicenseFile);
+		Assert.IsTrue(File.Exists(PathLicenseFile));
+
+		string publicKey = manager.KeyPublic;
+
+		/// Reload the license file and verify the expiration date is preserved
+		LicenseFile license = new();
+		bool isValid = license.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, string.Empty, out string messages);
+
+		/// Assert
+		Assert.IsTrue(isValid, $"License should be valid. Messages: {messages}");
+		Assert.AreEqual(expirationDate, license.ExpirationDate, "Expiration date should be preserved when loading from license file");
+	}
+
+	/// <summary>
+	/// Verify that expiration dates are properly handled when creating and validating licenses.
+	/// </summary>
+	[TestMethod]
+	public void TestExpirationDateBoundaryValidation()
+	{
+		/// Arrange
+		LicenseManagerX.LicenseManager manager = CreateLicenseManager("Sed kasd justo nonumy gubergren labore tempor tincidunt.");
+
+		const string PRODUCT_ID = "Test Product ID";
+		manager.ProductId = PRODUCT_ID;
+
+		/// Set a known base time for the license creation
+		DateTime baseTime = new(2025, 4, 15, 10, 0, 0, DateTimeKind.Unspecified);
+		MyNow.UtcNow = () => baseTime.ToUniversalTime();
+		MyNow.Now = () => baseTime;
+
+		/// Set expiration to 3 days from the base time => April 18
+		DateOnly expirationDate = DateOnly.FromDateTime(baseTime.AddDays(3));
+		manager.ExpirationDate = expirationDate;
+		manager.ExpirationDays = 3;
+
+		/// Act
+		manager.SaveLicenseFile(PathLicenseFile);
+		string publicKey = manager.KeyPublic;
+
+		/// Assert - On base date (April 15), should be valid
+		MyNow.UtcNow = () => baseTime.ToUniversalTime();
+		MyNow.Now = () => baseTime;
+
+		manager = new();
+		bool isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out string messages);
+		Assert.IsTrue(isValid, $"License should be valid on April 15. Messages: {messages}");
+
+		/// Assert - One minute before expiration date midnight (April 17 23:59), should be valid
+		DateTime testTime = expirationDate.ToDateTime(new()).AddDays(-1).AddHours(23).AddMinutes(59);
+		MyNow.UtcNow = () => testTime.ToUniversalTime();
+		MyNow.Now = () => testTime;
+
+		manager = new();
+		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
+		Assert.IsTrue(isValid, $"License should be valid on April 17 at 23:59. Messages: {messages}");
+
+		/// Assert - At expiration date midnight (April 18 00:00), should be invalid
+		testTime = expirationDate.ToDateTime(new());
+		MyNow.UtcNow = () => testTime.ToUniversalTime();
+		MyNow.Now = () => testTime;
+
+		manager = new();
+		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
+		Assert.IsFalse(isValid, $"License should be expired at April 18 midnight. Messages: {messages}");
+
+		/// Assert - During expiration date (April 18 10:00), should remain invalid
+		testTime = expirationDate.ToDateTime(new()).AddHours(10);
+		MyNow.UtcNow = () => testTime.ToUniversalTime();
+		MyNow.Now = () => testTime;
+
+		manager = new();
+		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
+		Assert.IsFalse(isValid, $"License should remain expired on April 18. Messages: {messages}");
+	}
+
+	[TestMethod]
+	public void TestExpirationDateShouldNotShiftEarlierForNegativeOffset()
+	{
+		/// Arrange
+		LicenseManagerX.LicenseManager manager = CreateLicenseManager("Labore accusam dolore diam invidunt lorem ipsum dolor sit amet.");
+		const string PRODUCT_ID = "Negative Offset Product";
+		manager.ProductId = PRODUCT_ID;
+
+		TimeSpan offset = TimeSpan.FromHours(-5);
+		DateTime baseUtcNow = new(DateTime.UtcNow.Year + 1, 4, 10, 15, 30, 00, DateTimeKind.Utc);
+		DateTime baseLocalNow = baseUtcNow.Add(offset);
+		MyNow.UtcNow = () => baseUtcNow;
+		MyNow.Now = () => baseLocalNow;
+
+		manager.ExpirationDays = 2;
+		DateOnly expectedExpirationDate = DateOnly.FromDateTime(baseLocalNow).AddDays(manager.ExpirationDays);
+		manager.SaveLicenseFile(PathLicenseFile);
+		string publicKey = manager.KeyPublic;
+
+		/// Assert - One minute before local midnight on expiration date should still be valid.
+		DateTime oneMinuteBeforeExpirationDate = expectedExpirationDate.ToDateTime(new()).AddDays(-1).AddHours(23).AddMinutes(59);
+		MyNow.UtcNow = () => oneMinuteBeforeExpirationDate.Subtract(offset);
+		MyNow.Now = () => oneMinuteBeforeExpirationDate;
+		manager = new();
+		bool isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out string messages);
+		Assert.IsTrue(isValid, $"Expected valid one minute before expiration date local midnight; failure indicates expiration date shifted earlier. Messages: {messages}");
+	}
+
+	[TestMethod]
+	public void TestExpirationDayBeforeShouldRemainValid()
+	{
+		/// Arrange
+		LicenseManagerX.LicenseManager manager = CreateLicenseManager("Lorem ipsum dolor sit amet consectetuer adipiscing elit.");
+		const string PRODUCT_ID = "Badger Product ID";
+		manager.ProductId = PRODUCT_ID;
+
+		DateTime baseLocalNow = new(DateTime.UtcNow.Year + 1, 4, 10, 9, 0, 0, DateTimeKind.Unspecified);
+		MyNow.UtcNow = () => baseLocalNow.ToUniversalTime();
+		MyNow.Now = () => baseLocalNow;
+
+		manager.ExpirationDays = 2;
+		DateOnly expectedExpirationDate = DateOnly.FromDateTime(baseLocalNow).AddDays(manager.ExpirationDays);
+		manager.SaveLicenseFile(PathLicenseFile);
+		Assert.IsTrue(File.Exists(PathLicenseFile));
+
+		string publicKey = manager.KeyPublic;
+
+		/// Act
+		/// Set time to day BEFORE expiration date.
+		DateTime dayBeforeExpiration = expectedExpirationDate.ToDateTime(new()).AddDays(-1).AddHours(12);
+		MyNow.UtcNow = () => dayBeforeExpiration.ToUniversalTime();
+		MyNow.Now = () => dayBeforeExpiration;
+
+		manager = new();
+		bool isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out string messages);
+
+		/// Assert
+		Assert.IsTrue(isValid, $"License should still be valid on the day before expiration. Messages: {messages}");
+
+		/// Act
+		/// Set time to day OF expiration date.
+		DateTime dayOfExpiration = expectedExpirationDate.ToDateTime(new()).AddHours(12);
+		MyNow.UtcNow = () => dayOfExpiration.ToUniversalTime();
+		MyNow.Now = () => dayOfExpiration;
+
+		manager = new();
+		isValid = manager.IsThisLicenseValid(PRODUCT_ID, publicKey, PathLicenseFile, pathAssembly: string.Empty, out messages);
+
+		/// Assert
+		Assert.IsFalse(isValid, $"License should be invalid on the day of expiration. Messages: {messages}");
 	}
 }

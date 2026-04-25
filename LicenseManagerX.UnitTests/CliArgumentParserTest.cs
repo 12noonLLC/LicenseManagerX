@@ -246,7 +246,7 @@ public class CliArgumentParserTest
 			PrivateFilePath = "test.private",
 			LicenseFilePath = "test.lic",
 			ExpirationDays = 30,
-			ExpirationDate = DateTime.Now.AddDays(30),
+			ExpirationDate = DateOnly.FromDateTime(DateTime.Now.AddDays(30)),
 		};
 
 		// Act & Assert
@@ -290,7 +290,9 @@ public class CliArgumentParserTest
 	{
 		// Arrange
 		var manager = new LicenseManager();
-		var expirationDate = DateTime.UtcNow.Date.AddDays(45);
+		// Use local date consistently
+		DateOnly today = DateOnly.FromDateTime(DateTime.Now.Date);
+		var expirationDate = today.AddDays(45);
 
 		var parser = new CliArgumentParser
 		{
@@ -301,7 +303,7 @@ public class CliArgumentParserTest
 		parser.ApplyOverrides(manager);
 
 		// Assert
-		Assert.AreEqual(expirationDate, manager.ExpirationDateUTC);
+		Assert.AreEqual(expirationDate, manager.ExpirationDate);
 		Assert.AreEqual(45, manager.ExpirationDays);
 	}
 
@@ -369,10 +371,10 @@ public class CliArgumentParserTest
 	public void TestApplyOverrides_ExpirationDateComparison()
 	{
 		// Arrange
-		var existingDate = DateTime.UtcNow.Date.AddDays(30);
+		var existingDate = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(30));
 		LicenseManager manager = new()
 		{
-			ExpirationDateUTC = existingDate,
+			ExpirationDate = existingDate,
 		};
 
 		var parser1 = new CliArgumentParser()
@@ -387,11 +389,11 @@ public class CliArgumentParserTest
 
 		// Act & Assert - Same date should not change anything
 		parser1.ApplyOverrides(manager);
-		Assert.AreEqual(existingDate, manager.ExpirationDateUTC);
+		Assert.AreEqual(existingDate, manager.ExpirationDate);
 
 		// Act & Assert - Different date should change the value
 		parser2.ApplyOverrides(manager);
-		Assert.AreEqual(existingDate.AddDays(15), manager.ExpirationDateUTC);
+		Assert.AreEqual(existingDate.AddDays(15), manager.ExpirationDate);
 	}
 
 	[TestMethod]

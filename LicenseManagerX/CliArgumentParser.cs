@@ -29,7 +29,7 @@ public class CliArgumentParser
 	public LicenseType? LicenseType { get; set; }
 	public int? Quantity { get; set; }
 	public int? ExpirationDays { get; set; }
-	public DateTime? ExpirationDate { get; set; }
+	public DateOnly? ExpirationDate { get; set; }
 	public Dictionary<string, string> LicenseAttributes { get; set; } = [];
 	public string? LockPath { get; set; }
 
@@ -156,7 +156,7 @@ public class CliArgumentParser
 					{
 						throw new ArgumentException("Missing value for --expiration-date argument");
 					}
-					if (!DateTime.TryParse(args[++i], CultureInfo.InvariantCulture, DateTimeStyles.None, out var expirationDate))
+					if (!DateOnly.TryParseExact(args[++i], LicenseManager.DateFormat_Expiration, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly expirationDate))
 					{
 						throw new ArgumentException("Invalid expiration-date format. Use YYYY-MM-DD format");
 					}
@@ -354,12 +354,12 @@ public class CliArgumentParser
 		if (ExpirationDays.HasValue && (manager.ExpirationDays != ExpirationDays.Value))
 		{
 			manager.ExpirationDays = ExpirationDays.Value;
-			// ExpirationDateUTC is automatically updated by the property change handler
+			// ExpirationDate is automatically updated by the property change handler
 		}
-		else if (ExpirationDate.HasValue && (manager.ExpirationDateUTC != ExpirationDate.Value))
+		else if (ExpirationDate.HasValue && (manager.ExpirationDate != ExpirationDate.Value))
 		{
-			manager.ExpirationDateUTC = ExpirationDate.Value;
-			manager.ExpirationDays = (int)(ExpirationDate.Value - MyNow.UtcNow().Date).TotalDays;
+			manager.ExpirationDate = ExpirationDate.Value;
+			manager.ExpirationDays = (int)(ExpirationDate.Value.ToDateTime(new()) - DateOnly.FromDateTime(MyNow.Now().Date).ToDateTime(new())).TotalDays;
 		}
 
 		// Apply license attributes if any specified
@@ -393,6 +393,7 @@ public class CliArgumentParser
 		Console.WriteLine("License Manager X CLI - Create license files from .private files");
 		Console.WriteLine();
 		Console.WriteLine("Usage:");
+		Console.WriteLine("  lmx --private <path>");
 		Console.WriteLine("  lmx --private <path> --license <path> [options]");
 		Console.WriteLine("  lmx --private <path> --save --license <path> [options]");
 		Console.WriteLine("  lmx --private <path> --save [options]");
@@ -400,10 +401,11 @@ public class CliArgumentParser
 		Console.WriteLine("Required Arguments:");
 		Console.WriteLine("  --private, -p <path> Path to the .private file");
 		Console.WriteLine();
-		Console.WriteLine("At least one must be specified:");
+		Console.WriteLine("Display keypair, save keypair, or create license:");
+		Console.WriteLine("   You can specify one or more of these switches.");
+		Console.WriteLine("   If you do not specify any of these, the CLI only displays the properties from the keypair file.");
 		Console.WriteLine("  --save, -s           Save the keypair file");
 		Console.WriteLine("  --license, -l <path> Path to the new .lic file (will not overwrite unless --force)");
-		Console.WriteLine("(If neither is specified, it will display properties from .private file.)");
 		Console.WriteLine();
 		Console.WriteLine("Optional Arguments:");
 		Console.WriteLine("  --force, -f                        Overwrite the license file if it already exists");

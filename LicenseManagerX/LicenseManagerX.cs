@@ -42,6 +42,7 @@ public partial class LicenseManager : ObservableObject
 {
 	public const string FileExtension_License = ".lic";
 	public const string FileExtension_PrivateKey = ".private";
+	internal const string DateFormat_Expiration = "yyyy-MM-dd";
 
 	private const string ELEMENT_NAME_ROOT = "private";
 	private const string ATTRIBUTE_NAME_VERSION = "version";
@@ -95,12 +96,12 @@ public partial class LicenseManager : ObservableObject
 	[ObservableProperty]
 	private LicenseType _standardOrTrial = LicenseType.Standard;
 	[ObservableProperty]
-	private DateTime _expirationDateUTC = DateTime.MaxValue.Date;
+	private DateOnly _expirationDate = DateOnly.MaxValue;
 	[ObservableProperty]
 	private int _expirationDays;
 	partial void OnExpirationDaysChanged(int value)
 	{
-		ExpirationDateUTC = MyNow.UtcNow().Date.AddDays(value);
+		ExpirationDate = DateOnly.FromDateTime(MyNow.Now()).AddDays(value);
 	}
 	[ObservableProperty]
 	private int _quantity = 1;
@@ -305,14 +306,11 @@ public partial class LicenseManager : ObservableObject
 		StandardOrTrial = Enum.Parse<LicenseType>(license.Element(ELEMENT_NAME_STANDARD_OR_TRIAL)!.Value);
 
 		XElement? eltExpirationDate = license.Element(ELEMENT_NAME_EXPIRATION_DATE);
-		ExpirationDateUTC = string.IsNullOrEmpty(eltExpirationDate?.Value)
-			? DateTime.MaxValue.Date
-			: DateTime.Parse(eltExpirationDate.Value, CultureInfo.InvariantCulture,
-									DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+		ExpirationDate = ParseExpirationDateWithBackwardsCompatibility(eltExpirationDate?.Value);
 		//ExpirationDays = Convert.ToInt32(license.Element(ELEMENT_NAME_EXPIRATION_DAYS)!.Value);
-		ExpirationDays = (ExpirationDateUTC == DateTime.MaxValue.Date)
+		ExpirationDays = (ExpirationDate == DateOnly.MaxValue)
 								? Convert.ToInt32(license.Element(ELEMENT_NAME_EXPIRATION_DAYS)!.Value)
-								: (ExpirationDateUTC - MyNow.UtcNow().Date).Days;
+								: (int)(ExpirationDate.ToDateTime(new()) - DateOnly.FromDateTime(MyNow.Now()).ToDateTime(new())).TotalDays;
 		Quantity = Convert.ToInt32(license.Element(ELEMENT_NAME_QUANTITY)!.Value);
 		PathAssembly = root.Element(ELEMENT_NAME_PATHASSEMBLY)!.Value;
 		IsLockedToAssembly = !string.IsNullOrEmpty(PathAssembly);
@@ -437,7 +435,7 @@ public partial class LicenseManager : ObservableObject
 				)
 				, new XElement(ELEMENT_NAME_LICENSE
 					, new XElement(ELEMENT_NAME_STANDARD_OR_TRIAL, StandardOrTrial)
-					, new XElement(ELEMENT_NAME_EXPIRATION_DATE, (ExpirationDays == 0) ? null : ExpirationDateUTC.ToString(CultureInfo.InvariantCulture))
+					, new XElement(ELEMENT_NAME_EXPIRATION_DATE, (ExpirationDays == 0) ? null : ExpirationDate.ToString("yyyy-MM-dd"))
 					, new XElement(ELEMENT_NAME_EXPIRATION_DAYS, ExpirationDays)
 					, new XElement(ELEMENT_NAME_QUANTITY, Quantity)
 				)
@@ -517,9 +515,9 @@ public partial class LicenseManager : ObservableObject
 			.As(StandardOrTrial);
 		if (ExpirationDays > 0)
 		{
-			// ExpiresAt() converts passed date/time to UTC and assigns to Expiration property.
-			// If we do this with LocalTime, the expiration date will be off by the time zone offset.
-			licenseBuilder.ExpiresAt(MyNow.UtcNow().Date.AddDays(ExpirationDays));
+			// Standard.Licensing.12noon treats ExpiresAt/Expiration as date-only. Time-of-day and time zone are ignored.
+			DateTime expirationDateTime = DateTime.SpecifyKind(ExpirationDate.ToDateTime(new()), DateTimeKind.Local);
+			licenseBuilder.ExpiresAt(expirationDateTime);
 		}
 		licenseBuilder
 			.WithMaximumUtilization(Quantity)
@@ -619,11 +617,11 @@ public partial class LicenseManager : ObservableObject
 				{
 					differences.Add($"Type: Current = {StandardOrTrial}, New = {_licenseFile.StandardOrTrial}");
 				}
-				if (ExpirationDateUTC != _licenseFile.ExpirationDateUTC)
+				if (ExpirationDate != _licenseFile.ExpirationDate)
 				{
 					differences.Add($"Expiration date: " +
-						$"Current = {((ExpirationDateUTC == DateTime.MaxValue.Date) ? "None" : ExpirationDateUTC):D}, " +
-						$"New = {((_licenseFile.ExpirationDateUTC == DateTime.MaxValue.Date) ? "None" : _licenseFile.ExpirationDateUTC):D}"
+						$"Current = {((ExpirationDate == DateOnly.MaxValue) ? "None" : ExpirationDate):D}, " +
+						$"New = {((_licenseFile.ExpirationDate == DateOnly.MaxValue) ? "None" : _licenseFile.ExpirationDate):D}"
 					);
 				}
 				if (ExpirationDays != _licenseFile.ExpirationDays)
@@ -715,7 +713,7 @@ public partial class LicenseManager : ObservableObject
 				}
 
 				StandardOrTrial = _licenseFile.StandardOrTrial;
-				ExpirationDateUTC = _licenseFile.ExpirationDateUTC;
+				ExpirationDate = _licenseFile.ExpirationDate;
 				ExpirationDays = _licenseFile.ExpirationDays;
 				Quantity = _licenseFile.Quantity;
 
@@ -802,5 +800,41 @@ public partial class LicenseManager : ObservableObject
 			IsKeypairDirty = true;
 			IsLicenseDirty = true;
 		}
+	}
+
+	/// <summary>
+	/// Parse expiration date with backwards compatibility for old formats.
+	/// Handles: new ISO 8601 (yyyy-MM-dd), old DateTime strings, and RFC1123 format.
+	/// </summary>
+	/// <param name="dateString">The date string to parse</param>
+	/// <returns>Parsed DateOnly value, or DateOnly.MaxValue if empty/invalid</returns>
+	private static DateOnly ParseExpirationDateWithBackwardsCompatibility(string? dateString)
+	{
+		if (string.IsNullOrWhiteSpace(dateString))
+		{
+			return DateOnly.MaxValue;
+		}
+
+		// Try new format first: yyyy-MM-dd (ISO 8601 date-only format)
+		if (DateOnly.TryParseExact(dateString, DateFormat_Expiration, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly result))
+		{
+			return result;
+		}
+
+		// Try old DateTime formats (backward compatibility)
+		// Old .private file format: "12/01/2027 00:00:00" or similar region-specific DateTime.ToString()
+		if (DateTime.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime dateTime))
+		{
+			return DateOnly.FromDateTime(dateTime.Date);
+		}
+
+		// Try RFC1123 format (old .lic file format): "Sun, 02 Jan 2028 00:00:00 GMT"
+		if (DateTime.TryParseExact(dateString, "R", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime rfc1123DateTime))
+		{
+			return DateOnly.FromDateTime(rfc1123DateTime.Date);
+		}
+
+		// If all parsing fails, return MaxValue
+		return DateOnly.MaxValue;
 	}
 }

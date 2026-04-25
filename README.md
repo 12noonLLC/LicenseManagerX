@@ -100,15 +100,38 @@ The licensed application can then read and use these features as needed.
 | Property | Usage |
 |----------|-------|
 | Type | Standard or trial license |
-| Expiration Date | The date on which the license expires. `DateTime.MaxDate.Date` means no expiry. |
-| Expiration | The number of days until the license expires. Zero means no expiry. |
+| Expiration Date | The date on which the license expires (no time, no time zone info). `DateOnly.MaxValue` means no expiry. |
+| Expiration Days | The number of days until the license expires. Zero means no expiry. |
 | Quantity | Minimum value is one (1) |
 
 The licensed application can check the type to permit only certain features.
 
-If the expiration is set to zero, there is no expiry.
+The license expires at 12:00 AM (midnight) local time on the specified date. Stored as a time-zone-agnostic date.
+
+If the expiration days is set to zero, there is no expiry.
 
 The quantity is not enforced.
+
+#### Expiration Date Semantics
+
+**Important:** Expiration dates are stored and compared using local time, not UTC:
+
+- **Storage:** The expiration date is stored as a `DateOnly` value in ISO 8601 format (`yyyy-MM-dd` in XML files).
+- **Interpretation:** An expiration date of April 12 means the license expires at 12:00 AM (midnight) **local time** on April 12.
+- **Validation:** When validating a license, the current local date is compared against the expiration date.
+- **Example:** If a license is set to expire on April 12 and the current local time is April 11 at 11:59 PM, the license is still valid. Once the local clock strikes 12:00 AM on April 12, the license is expired.
+
+This approach ensures consistent expiration behavior across different time zones without requiring time zone conversion logic.
+
+#### Serialization Format
+
+- **New Format:** Expiration dates are saved in ISO 8601 format: `2027-12-01` (yyyy-MM-dd)
+- **Backwards Compatibility:** The system can read expiration dates in the following legacy formats in `.private` files:
+  - Old DateTime string: `12/01/2027 00:00:00`
+  - RFC1123 format: `Sun, 02 Jan 2028 00:00:00 GMT`
+  - Any other culture-invariant DateTime format
+  
+When loading an older `.private` file with legacy date formats, the expiration date is automatically converted to the new ISO 8601 format when the keypair is next saved.
 
 ### License Attributes
 
@@ -120,7 +143,7 @@ These attributes allow you to define additional properties for the license.
 3. Save the license file to apply the changes.
 
 For example:
-   
+
 | Key=Value       |
 |-----------------|
 | Region=US |
@@ -139,12 +162,6 @@ This information can be displayed by the licensed application.
 | Company | Company of the licensee (optional) |
 
 ## Usage
-
-### CI / Release Notes
-
-- `.github/workflows/build.yml` builds and tests on push/PR/tag and creates GitHub releases for version tags.
-- NuGet publishing is **not** done by `build.yml`.
-- Publish `LicenseManager_12noon.Client` via `.github/workflows/publish-nuget.yml`, which is manual (`workflow_dispatch`) and protected by the `nuget-prod` environment approval gate.
 
 ### Create a New License
 
@@ -320,3 +337,7 @@ should keep the license file.
 
 The **LicenseManagerX_Example** project is an example application to demonstrate how to
 use the NuGet client library to validate a license and access the license's information.
+
+**Note:** The `.lic` (license) files are managed by the Standard.Licensing library and are not
+directly parsed or modified by License Manager X.
+Expiration dates in `.lic` files use UTC format as defined by the Standard.Licensing library.
