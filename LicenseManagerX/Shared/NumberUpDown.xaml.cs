@@ -40,6 +40,11 @@ namespace Shared;
 /// </ResourceDictionary>
 ///
 /// Step 3)
+/// Add this to App.xaml.cs:
+///
+///    [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+///
+/// Step 4)
 /// Go ahead and use your control in the XAML file.
 ///
 ///     <MyNamespace:NumberUpDown />
