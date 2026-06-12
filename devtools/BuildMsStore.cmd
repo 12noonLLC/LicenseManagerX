@@ -202,6 +202,8 @@ dotnet pack ^
 	--version %VERSION% ^
 	--no-restore ^
 	--no-build ^
+   --include-symbols ^
+   --property:SymbolPackageFormat=snupkg ^
 	--output "%PUBLISH_FILES_PATH%"
 if errorlevel 1 exit /b %ERRORLEVEL%
 

@@ -96,7 +96,8 @@ jobs:
 
           foreach ($package in $packages)
           {
-            dotnet nuget push "$($package.FullName)" `
+            dotnet nuget push `
+              "$($package.FullName)" `
               --source "https://api.nuget.org/v3/index.json" `
               --api-key "$env:NUGET_AUTH_TOKEN" `
               --skip-duplicate

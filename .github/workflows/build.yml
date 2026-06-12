@@ -261,6 +261,8 @@ jobs:
             "${{ env.PROJECT_NUGET_PATH }}" `
             --configuration ${{ env.BUILD_CONFIGURATION }} `
             --no-restore `
+            --include-symbols `
+            --property:SymbolPackageFormat=snupkg `
             --output "${{ env.PUBLISH_FILES_PATH }}"
 
       - name: 🔍 Display NuGet Manifest (.nuspec)
@@ -407,7 +409,7 @@ jobs:
   release:
     name: 🚀 Create GitHub release
     # We require the 'build' job because it runs unit tests.
-    needs: [ build, build_msix]
+    needs: [ build, build_msix ]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
@@ -419,7 +421,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📥 Download deployment folder as a build artifact
+      - name: 📥 Download deployment folder
         uses: actions/download-artifact@v8
         with:
           name: ${{ env.ARTIFACT_PACKAGE }}
