@@ -18,7 +18,8 @@ public class CreateLicenseTest
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+		PathTestFolder = Path.Combine(testContext.TestRunResultsDirectory ?? Path.GetTempPath(), testContext.FullyQualifiedTestClassName);
+		LicenseManagerX.LicenseManager.EnsureParentDirectoryExists(Path.Combine(PathTestFolder, "_"));
 	}
 
 	[ClassCleanup]

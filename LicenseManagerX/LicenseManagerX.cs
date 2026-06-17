@@ -383,6 +383,22 @@ public partial class LicenseManager : ObservableObject
 		}
 	}
 
+	public static void EnsureParentDirectoryExists(string filePath)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+		string? parentDirectory = Path.GetDirectoryName(filePath);
+		if (string.IsNullOrWhiteSpace(parentDirectory))
+		{
+			return;
+		}
+
+		if (!Directory.Exists(parentDirectory))
+		{
+			Directory.CreateDirectory(parentDirectory);
+		}
+	}
+
 	/// <summary>
 	/// Save public/private keys and passphrase as XML.
 	/// Change the extension of the passed file to ".private."
@@ -395,6 +411,8 @@ public partial class LicenseManager : ObservableObject
 	/// <param name="pathKeypair"></param>
 	public void SaveKeypair(string pathKeypair)
 	{
+		EnsureParentDirectoryExists(pathKeypair);
+
 		new XDocument(
 			new XElement(ELEMENT_NAME_ROOT
 				, new XAttribute(ATTRIBUTE_NAME_VERSION, 2)
@@ -683,7 +701,7 @@ public partial class LicenseManager : ObservableObject
 					}
 				}
 
-				if (differences.Any())
+				if (differences.Count != 0)
 				{
 					messages = "The license is valid but the following properties differ from the keypair file:" + Environment.NewLine
 									+ string.Join(Environment.NewLine, differences);
@@ -799,6 +817,183 @@ public partial class LicenseManager : ObservableObject
 
 			IsKeypairDirty = true;
 			IsLicenseDirty = true;
+		}
+	}
+
+	/// <summary>
+	/// Loads license file properties for display purposes without validation.
+	/// This method reads the license file and extracts its properties.
+	/// </summary>
+	/// <param name="pathLicense">Full path to the license file (.lic)</param>
+	/// <exception cref="FileNotFoundException">The license file does not exist.</exception>
+	/// <exception cref="InvalidOperationException">Failed to parse license file.</exception>
+	public void LoadLicenseFile(string pathLicense)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(pathLicense, nameof(pathLicense));
+
+		if (!File.Exists(pathLicense))
+		{
+			throw new FileNotFoundException($"License file does not exist: {pathLicense}");
+		}
+
+		try
+		{
+			// Read the license file using Standard.Licensing
+			string licenseContent = File.ReadAllText(pathLicense, Encoding.UTF8);
+			License license = License.Load(licenseContent);
+
+			// Extract license properties
+			Id = license.Id;
+			StandardOrTrial = license.Type;
+			Quantity = license.Quantity;
+
+			// Extract customer information
+			if (license.Customer is not null)
+			{
+				Name = license.Customer.Name ?? string.Empty;
+				Email = license.Customer.Email ?? string.Empty;
+				Company = license.Customer.Company ?? string.Empty;
+			}
+
+			// Extract product features
+			ProductFeatures.Clear();
+			if (license.ProductFeatures is not null)
+			{
+				foreach (var feature in license.ProductFeatures.GetAll())
+				{
+					ProductFeatures[feature.Key] = feature.Value;
+				}
+			}
+
+			// Extract license attributes
+			LicenseAttributes.Clear();
+			if (license.AdditionalAttributes is not null)
+			{
+				foreach (var attribute in license.AdditionalAttributes.GetAll())
+				{
+					LicenseAttributes[attribute.Key] = attribute.Value;
+				}
+			}
+
+			// Extract expiration information
+			if (license.Expiration.Date != DateTime.MaxValue.Date)
+			{
+				ExpirationDate = DateOnly.FromDateTime(license.Expiration);
+				// Extract expiration days from attributes if available
+				if (LicenseAttributes.TryGetValue(Attribute_Name_ExpirationDays, out string? expirationDaysStr) &&
+					int.TryParse(expirationDaysStr, out int expirationDays))
+				{
+					ExpirationDays = expirationDays;
+				}
+				else
+				{
+					ExpirationDays = (int)(license.Expiration.Date - DateOnly.FromDateTime(MyNow.Now().Date).ToDateTime(new())).TotalDays;
+				}
+			}
+			else
+			{
+				ExpirationDate = DateOnly.MaxValue;
+				ExpirationDays = 0;
+			}
+
+			ClearLicenseDirtyFlag();
+		}
+		catch (FileNotFoundException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Failed to load license file: {ex.Message}", ex);
+		}
+	}
+
+	/// <summary>
+	/// Updates a license file with modified properties (license type, quantity, expiration, attributes).
+	/// Note: This reads the original license, applies property changes, and re-saves it with a new signature.
+	/// </summary>
+	/// <param name="pathLicense">Full path to the license file (.lic)</param>
+	/// <exception cref="FileNotFoundException">The license file does not exist.</exception>
+	/// <exception cref="ArgumentException">Passphrase or private key is missing.</exception>
+	public void UpdateLicenseFileProperties(string pathLicense)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(pathLicense, nameof(pathLicense));
+		ArgumentException.ThrowIfNullOrEmpty(Passphrase, nameof(Passphrase));
+		ArgumentException.ThrowIfNullOrEmpty(KeyPrivate, nameof(KeyPrivate));
+
+		if (!File.Exists(pathLicense))
+		{
+			throw new FileNotFoundException($"License file does not exist: {pathLicense}");
+		}
+
+		try
+		{
+			// Load existing license to get all base properties
+			string licenseContent = File.ReadAllText(pathLicense, Encoding.UTF8);
+			License existingLicense = License.Load(licenseContent);
+
+			// Build new license with updated properties
+			ILicenseBuilder licenseBuilder = License.New()
+				.WithUniqueIdentifier(existingLicense.Id)
+				.As(StandardOrTrial)
+				.WithMaximumUtilization(Quantity);
+
+			// Apply expiration if present
+			if (ExpirationDays > 0)
+			{
+				DateTime expirationDateTime = DateTime.SpecifyKind(ExpirationDate.ToDateTime(new()), DateTimeKind.Local);
+				licenseBuilder.ExpiresAt(expirationDateTime);
+			}
+
+			// Apply product features with reserved ones
+			Dictionary<string, string> allFeatures = new(ProductFeatures)
+			{
+				[ProductFeature_Name_Product] = Product,
+				[ProductFeature_Name_Version] = Version,
+				[ProductFeature_Name_PublishDate] = PublishDate?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+			};
+			licenseBuilder.WithProductFeatures(allFeatures);
+
+			// Apply customer info
+			if (!string.IsNullOrWhiteSpace(Name))
+			{
+				licenseBuilder.LicensedTo(Name, Email ?? string.Empty, (Customer c) =>
+				{
+					if (!string.IsNullOrWhiteSpace(Company))
+					{
+						c.Company = Company;
+					}
+				});
+			}
+
+			// Apply license attributes with reserved ones
+			Dictionary<string, string> allAttributes = new(LicenseAttributes)
+			{
+				[Attribute_Name_ProductIdentity] = LicenseAttributes.TryGetValue(Attribute_Name_ProductIdentity, out string? prodId)
+					? prodId
+					: string.Empty,
+				[Attribute_Name_AssemblyIdentity] = LicenseAttributes.TryGetValue(Attribute_Name_AssemblyIdentity, out string? asmId)
+					? asmId
+					: string.Empty,
+				[Attribute_Name_ExpirationDays] = (ExpirationDays == 0) ? string.Empty : ExpirationDays.ToString(),
+			};
+			licenseBuilder.WithAdditionalAttributes(allAttributes);
+
+			// Create and sign the license
+			License updatedLicense = licenseBuilder.CreateAndSignWithPrivateKey(KeyPrivate, Passphrase);
+
+			// Write the updated license file
+			File.WriteAllText(pathLicense, updatedLicense.ToString(), Encoding.UTF8);
+
+			ClearLicenseDirtyFlag();
+		}
+		catch (FileNotFoundException)
+		{
+			throw;
+		}
+		catch (Exception ex)
+		{
+			throw new InvalidOperationException($"Failed to update license file: {ex.Message}", ex);
 		}
 	}
 

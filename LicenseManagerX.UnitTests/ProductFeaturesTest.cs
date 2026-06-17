@@ -17,7 +17,8 @@ public class ProductFeaturesTest
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+		PathTestFolder = Path.Combine(testContext.TestRunResultsDirectory ?? Path.GetTempPath(), testContext.FullyQualifiedTestClassName);
+		LicenseManagerX.LicenseManager.EnsureParentDirectoryExists(Path.Combine(PathTestFolder, "_"));
 	}
 
 	[TestInitialize]
@@ -52,8 +53,8 @@ public class ProductFeaturesTest
 	public void TestIsReservedFeatureName()
 	{
 		// Arrange
-		string[] reservedNames = { "Product", "Version", "Publish Date" };
-		string[] validNames = { "MaxUsers", "AllowBackups", "EnablePremium", "product", "VERSION" };
+		string[] reservedNames = ["Product", "Version", "Publish Date"];
+		string[] validNames = ["MaxUsers", "AllowBackups", "EnablePremium", "product", "VERSION"];
 
 		// Act & Assert
 		foreach (var name in reservedNames)

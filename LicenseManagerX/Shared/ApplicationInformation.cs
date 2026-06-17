@@ -45,6 +45,8 @@ public class ApplicationInformation
 	/// <summary>Gets the product web site URL.</summary>
 	public string WebSiteURL { get; private set; } = @"https://12noon.com";
 
+	public string InformationalVersion { get; private set; } = string.Empty;
+
 	// AssemblyDescription
 	// AssemblyConfiguration
 	// AssemblyTrademark
@@ -61,8 +63,6 @@ public class ApplicationInformation
 		string asmPath = GetAssemblyPath();
 		FileVersionInfo AppExeInfo = FileVersionInfo.GetVersionInfo(asmPath);
 
-		//AssemblyName asmName = asm.GetName();
-
 		//AssemblyTitleAttribute attrTitle = (AssemblyTitleAttribute)System.Attribute.GetCustomAttribute(asm, typeof(AssemblyTitleAttribute));
 		//string Title = attrTitle.Title;
 
@@ -77,8 +77,13 @@ public class ApplicationInformation
 		FileTitle = AppExeInfo.FileDescription ?? string.Empty;
 		FileVersion = AppExeInfo.FileVersion ?? string.Empty;
 		VersionShort = new Version(FileVersion).ToString(3);
-	}
 
+		//AssemblyName asmName = asm.GetName();
+		//
+		//InformationalVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+		//								?? asmName.Version?.ToString()
+		//								?? "Unknown";
+	}
 
 	/// <summary>
 	/// Return the full path to the running EXE or DLL.
@@ -99,9 +104,7 @@ public class ApplicationInformation
 		}
 
 		// Fallback: entry assembly location filename (works in non-single-file publish).
-#pragma warning disable IL3000 // Assembly.Location always returns empty string for assemblies embedded in a single-file app.
 		string? assemblyLocation = Assembly.GetEntryAssembly()?.Location;
-#pragma warning restore IL3000
 		if (!string.IsNullOrWhiteSpace(assemblyLocation))
 		{
 			return Path.Combine(directory, Path.GetFileName(assemblyLocation));

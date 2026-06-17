@@ -4,7 +4,7 @@
 
 License Manager X is a .NET-based license management application for creating and validating software licenses. It consists of:
 - **LicenseManagerX**: WPF desktop application (main UI)
-- **LicenseManagerX.Console**: Command-line interface for license generation
+- **LicenseManagerX.Console**: Command-line interface for license generation, designed to remain a lightweight shim that forwards command-line arguments to the main app.
 - **LicenseManager_12noon.Client**: NuGet package for license validation in client applications
 - **LicenseManagerX_Example**: Example application demonstrating license validation
 - **LicenseManagerX.UnitTests**: Unit test suite
@@ -91,3 +91,8 @@ dotnet pack LicenseManager_12noon.Client/LicenseManager_12noon.Client.csproj --c
 - Public/private key pairs are generated using a passphrase.
 - Product ID and public key are used by client applications to validate licenses.
 - `.private` files contain sensitive keypair information and should never be committed to source control.
+
+## Command-Line Interface Guidelines
+
+- Override the root HelpOption intentionally for custom pre/post help text.
+- Add explicit HelpOption instances on subcommands to avoid using the overridden root help behavior.

@@ -38,9 +38,9 @@ You can switch at any time--you are not locked in to one or the other.
 > Note that the **LicenseManager_12noon.Client** NuGet package includes the fixes in the
 [Standard.Licensing.12noon NuGet package](https://nuget.org/packages/Standard.Licensing.12noon)
 for the `Expiration` property.
-When/If [the pull request with those fixes](https://github.com/junian/Standard.Licensing/pull/47)
-is accepted into the original **Standard.Licensing** project,
-the **Standard.Licensing.12noon** package will be deprecated.
+[The pull request with those fixes](https://github.com/junian/Standard.Licensing/pull/47)
+has been accepted into the original **Standard.Licensing** project,
+so the **Standard.Licensing.12noon** package will be deprecated soon.
 
 You can download the License Manager X application from the Microsoft Store.
 
@@ -79,7 +79,7 @@ The publish date can represent any date you want.
 ### Product Features
 
 You can add custom product features to your license by specifying them in the `key=value` format.
-These features allow you to define additional metadata or functionality for your product.
+These features allow you to define additional properties or functionality for your product.
 
 1. In the **Product features** field, enter your custom feature in the `key=value` format.
 2. Add as many features as needed, each on a new line.
@@ -114,7 +114,7 @@ The quantity is not enforced.
 
 #### Expiration Date Semantics
 
-**Important:** Expiration dates are stored and compared using local time, not UTC:
+**Important:** Expiration dates are stored and compared as dates (using local time), not UTC:
 
 - **Storage:** The expiration date is stored as a `DateOnly` value in ISO 8601 format (`yyyy-MM-dd` in XML files).
 - **Interpretation:** An expiration date of April 12 means the license expires at 12:00 AM (midnight) **local time** on April 12.
@@ -203,73 +203,49 @@ prompt you for where to save the `.lic` file.
 
 ### Command Line Interface
 
-The License Manager X application includes a built-in command line interface. The same executable
+The License Manager X application includes a built-in command-line interface. The same executable
 can run in both GUI mode (when launched without arguments) and CLI mode (when arguments are provided).
 
-Once you have created a `.private` file using the GUI, you can use the
-command line interface to generate new license files more efficiently.
+You can create a `.private` file using the GUI or the command-line interface.
+You can then use the command-line interface to generate new license files in a build script, *etc*.
 
 #### Usage
 
 `lmx` is the Windows app execution alias for License Manager X. You can manage this in Windows Settings.
 
 ```cmd
-lmx --private <path> [--save] [--license <path>] [options]
+lmx version
+lmx keypair <create|update|show> ...
+lmx license <create|update|show> ...
 ```
 
-#### Required Arguments
+#### Command Tree
 
-- `--private, -p <path>` - Path to the `.private` file
+- `version` - Show version information.
+- `keypair create <keypair> ...` - Create a new `.private` file.
+- `keypair update <keypair> ...` - Update allowed properties in an existing `.private` file.
+- `keypair show <keypair>` - Display properties from a `.private` file.
+- `license create <keypair> --license <license> ...` - Create a new `.lic` file from a `.private` file.
+- `license update <keypair> --license <license> ...` - Update an existing `.lic` file using a `.private` file.
+- `license show <keypair> --license <license>` - Display properties from a `.lic` file.
 
-#### Display Keypair, Save Keypair, or Create License
+#### Shared Options
 
-You can specify one or more of these switches.
-If you do not specify any of these, the CLI only displays the properties from the keypair file.
+These options are supported where applicable on `keypair create`, `keypair update`, `license create`, and `license update`:
 
-- `--license, -l <path>` - Create a new `.lic` file (will not overwrite unless `--force` is used)
-- `--save, -s` - Write the specified values to the `.private` file
+| Option | Description |
+|--------|-------------|
+| `--product-version, -pv <version>` | - Product version
+| `--product-publish-date, -pd <date>` | - Product publish date in `YYYY-MM-DD` format
+| `--product-features, -pf <key=value ...>` | - Product features as space-separated key=value pairs
+| `--type, -t <Standard|Trial>` | - License type
+| `--quantity, -q <number>` | - License quantity (positive integer)
+| `--expiration-days, -dy <days>` | - Expiration in days (`0` means no expiry)
+| `--expiration-date, -dt <date>` | - Expiration date in `YYYY-MM-DD` format
+| `--license-attributes, -la <key=value ...>` | - License attributes as space-separated key=value pairs
+| `--lock <path>` | - Lock the license to a specific existing file, such as an EXE or DLL
 
-#### Optional Arguments
-
-- `--help, -h` - Show help
-- `--force, -f` - Overwrite the license file if it already exists
-- `--product-version, -v <version>` - Product version
-- `--product-publish-date, -pd <date>` - Product publish date (YYYY-MM-DD format)
-- `--product-features, -pf <pairs>` - Product features as key=value pairs
-- `--type, -t <Standard | Trial>` - License type
-- `--quantity, -q <number>` - License quantity (positive integer)
-- `--expiration-days, -dy <days>` - Expiration in days (0 = no expiry)
-- `--expiration-date, -dt <date>` - Expiration date (YYYY-MM-DD format)
-- `--license-attributes, -la <pairs>` - License attributes as key=value pairs
-- `--lock <path>` - Lock license to a specific file (_e.g.,_ EXE or DLL)
-
-#### Examples
-
-```cmd
-REM Display properties from .private file
-lmx -p my.private
-
-REM Create a standard license using default settings from .private file
-lmx -p my.private -l customer.lic
-
-REM Create a 30-day trial license
-lmx -p my.private -l trial.lic --type Trial --expiration-days 30
-
-REM Create an enterprise license with custom quantity and version
-lmx -p my.private -l enterprise.lic --quantity 100 --product-version 2.1.0
-
-REM Create a license locked to a specific executable
-lmx -p my.private -l locked.lic --lock C:\MyApp\MyApp.exe
-
-REM Create a license with custom product features
-lmx -p my.private -l featured.lic --product-features "Color=Blue Bird=Heron MaxUsers=50"
-
-REM Create a license with custom attributes
-lmx -p my.private -l attributed.lic --license-attributes "Department=Engineering Location=Seattle"
-
-REM Combine multiple options
-lmx -p my.private -l full.lic --type Trial --expiration-days 30 --lock C:\MyApp\MyApp.exe --product-features "Edition=Pro" --license-attributes "CustomerTier=Gold"
-```
+Note: `--expiration-days` and `--expiration-date` are mutually exclusive.
 
 #### Key=Value Format
 
@@ -278,6 +254,97 @@ For `--product-features` and `--license-attributes`, use space-separated key=val
 - Keys cannot be empty
 - Values can be empty: `"Key="` or `Key`
 - Spaces in values are not supported (use quotes around individual pairs if needed)
+
+#### Keypair Commands
+
+##### `keypair create <keypair>`
+
+Creates a new `.private` file. The target keypair file must not already exist.
+
+Required options:
+
+| Option | Description |
+|--------|-------------|
+| `--passphrase <text>` | Passphrase used to protect the keypair
+| `--product-id <text>` | Product ID
+| `--product-name <text>` | Product name
+| `--licensee-name <text>` | Licensee name
+| `--licensee-email <text>` | Licensee email
+
+Optional options:
+
+- `--licensee-company <text>` - Licensee company.
+- Any of the shared options listed above.
+
+Example:
+
+```cmd
+> lmx keypair create my.private --passphrase "correct horse battery staple" --product-id MyProductId --product-name "My Product" --licensee-name "Jane User" --licensee-email jane@example.com --licensee-company Contoso --product-version 1.2.3
+```
+
+##### `keypair update <keypair>`
+
+Updates an existing `.private` file. The source keypair file must already exist.
+
+Allowed options:
+
+- Any of the shared options listed above.
+
+Protected `.private` properties are intentionally **not** accepted by `keypair update`. This command cannot change:
+
+- Passphrase
+- Public key
+- Private key
+- Product name
+- Licensee name
+- Licensee email
+- Licensee company
+
+Example:
+
+```cmd
+> lmx keypair update my.private --product-version 2.0.0 --product-publish-date 2025-06-15 --product-features Edition=Pro Seats=50
+```
+
+##### `keypair show <keypair>`
+
+Displays properties from an existing `.private` file. The source keypair file must already exist.
+
+#### License Commands
+
+##### `license create <keypair> --license <license>`
+
+Creates a new `.lic` file from a `.private` file. The source keypair file must already exist.
+
+Required options:
+
+- `--license <license>` - Path to the new `.lic` file.
+
+Optional options:
+
+- Any of the shared options listed above.
+
+Example:
+
+```cmd
+> lmx license create my.private --license my.lic --type Standard --quantity 100 --product-version 2.0.0
+```
+
+##### `license update <keypair> --license <license>`
+
+Updates an existing `.lic` file using a `.private` file. The source keypair and license files must already exist.
+
+Required options:
+
+- `--license <license>` - Path to the existing `.lic` file.
+
+Optional options:
+
+- Any of the shared options listed above.
+
+##### `license show <keypair> --license <license>`
+
+Displays properties from an existing `.lic` file. The source keypair and license files must already exist.
 
 #### Security Notes
 

@@ -20,7 +20,8 @@ public class ClientLibraryDirectTests
    [ClassInitialize]
    public static void ClassSetup(TestContext testContext)
    {
-      PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+         PathTestFolder = Path.Combine(testContext.TestRunResultsDirectory ?? Path.GetTempPath(), testContext.FullyQualifiedTestClassName);
+      LicenseManager.EnsureParentDirectoryExists(Path.Combine(PathTestFolder, "_"));
    }
 
    [TestInitialize]

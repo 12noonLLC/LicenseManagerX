@@ -17,7 +17,8 @@ public class LicenseAttributesTest
 	[ClassInitialize]
 	public static void ClassSetup(TestContext testContext)
 	{
-		PathTestFolder = testContext.TestRunResultsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+		PathTestFolder = Path.Combine(testContext.TestRunResultsDirectory ?? Path.GetTempPath(), testContext.FullyQualifiedTestClassName);
+		LicenseManager.EnsureParentDirectoryExists(Path.Combine(PathTestFolder, "_"));
 	}
 
 	[TestInitialize]
@@ -52,8 +53,8 @@ public class LicenseAttributesTest
 	public void TestIsReservedAttributeName()
 	{
 		// Arrange
-		string[] reservedNames = { "Product Identity", "Assembly Identity", "Expiration Days", };
-		string[] validNames = { "CustomAttribute", "UserCount", "LicenseOwner", "product identity", "EXPIRATION DAYS", };
+		string[] reservedNames = ["Product Identity", "Assembly Identity", "Expiration Days",];
+		string[] validNames = ["CustomAttribute", "UserCount", "LicenseOwner", "product identity", "EXPIRATION DAYS",];
 
 		// Act & Assert
 		foreach (string name in reservedNames)
