@@ -37,7 +37,7 @@
   </ItemGroup>
 
    <ItemGroup>
-    <PackageReference Include="Standard.Licensing.12noon" />
+    <PackageReference Include="Standard.Licensing" />
   </ItemGroup>
 
 </Project>

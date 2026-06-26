@@ -533,7 +533,7 @@ public partial class LicenseManager : ObservableObject
 			.As(StandardOrTrial);
 		if (ExpirationDays > 0)
 		{
-			// Standard.Licensing.12noon treats ExpiresAt/Expiration as date-only. Time-of-day and time zone are ignored.
+			// Standard.Licensing treats ExpiresAt/Expiration as date-only. Time-of-day and time zone are ignored.
 			DateTime expirationDateTime = DateTime.SpecifyKind(ExpirationDate.ToDateTime(new()), DateTimeKind.Local);
 			licenseBuilder.ExpiresAt(expirationDateTime);
 		}
