@@ -66,9 +66,7 @@ concurrency:
 jobs:
   build:
     name: 🏗 Build and test
-    # TODO: Change back when Windows 2025 with VS2026 is available. (4 May 2026)
-    #runs-on: windows-latest
-    runs-on: windows-2025-vs2026
+    runs-on: windows-latest
     permissions:
       contents: read
 
@@ -235,9 +233,7 @@ jobs:
     name: 📦 Build MS Store and Standalone
     needs: build
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    # TODO: Change back when Windows 2025 with VS2026 is available. (4 May 2026)
-    #runs-on: windows-latest
-    runs-on: windows-2025-vs2026
+    runs-on: windows-latest
     environment: Production
     permissions:
       contents: read

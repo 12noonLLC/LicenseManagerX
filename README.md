@@ -29,20 +29,16 @@ project to handle license generation and validation.
 In addition to this Windows application, License Manager X can also be used
 from a command line to support scripting, etc.
 
-Your application will need to either:
-- Use the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client) NuGet package, which has an improved API to validate licenses for your .NET application.
-- Use the original **Standard.Licensing** NuGet package on which it is based.
+> #### **BREAKING CHANGE**
+> Version 3.0.0 completely changes the command-line switches to a command tree design. See below for details.
 
-You can switch at any time--you are not locked in to one or the other.
+Your application will need to use either:
+- the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client) NuGet package, which has an improved API to validate licenses for your .NET application.
+- the original **Standard.Licensing** NuGet package on which it is based.
 
-> Note that the **LicenseManager_12noon.Client** NuGet package includes the fixes in the
-[Standard.Licensing.12noon NuGet package](https://nuget.org/packages/Standard.Licensing.12noon)
-for the `Expiration` property.
-[The pull request with those fixes](https://github.com/junian/Standard.Licensing/pull/47)
-has been accepted into the original **Standard.Licensing** project,
-so the **Standard.Licensing.12noon** package will be deprecated soon.
+You can change which package you use at any time--you are not locked in to one or the other.
 
-You can download the License Manager X application from the Microsoft Store.
+Download the License Manager X application from the Microsoft Store.
 
 <a href="https://apps.microsoft.com/store/detail/9PFBGG44SHLM?launch=true&mode=full">
 	<img width="300" src="https://get.microsoft.com/images/en-us%20dark.svg"/>
@@ -108,7 +104,7 @@ The licensed application can check the type to permit only certain features.
 
 The license expires at 12:00 AM (midnight) local time on the specified date. Stored as a time-zone-agnostic date.
 
-If the expiration days is set to zero, there is no expiry.
+If expiration-days is set to zero, there is no expiry.
 
 The quantity is not enforced.
 
@@ -116,7 +112,7 @@ The quantity is not enforced.
 
 **Important:** Expiration dates are stored and compared as dates (using local time), not UTC:
 
-- **Storage:** The expiration date is stored as a `DateOnly` value in ISO 8601 format (`yyyy-MM-dd` in XML files).
+- **Storage:** The expiration date is stored as a `DateOnly` value in ISO 8601 format (`YYYY-MM-DD` in XML files).
 - **Interpretation:** An expiration date of April 12 means the license expires at 12:00 AM (midnight) **local time** on April 12.
 - **Validation:** When validating a license, the current local date is compared against the expiration date.
 - **Example:** If a license is set to expire on April 12 and the current local time is April 11 at 11:59 PM, the license is still valid. Once the local clock strikes 12:00 AM on April 12, the license is expired.
@@ -125,12 +121,12 @@ This approach ensures consistent expiration behavior across different time zones
 
 #### Serialization Format
 
-- **New Format:** Expiration dates are saved in ISO 8601 format: `2027-12-01` (yyyy-MM-dd)
+- **New Format:** Expiration dates are saved in ISO 8601 format: `YYYY-MM-DD` (_e.g._, "2027-12-31")
 - **Backwards Compatibility:** The system can read expiration dates in the following legacy formats in `.private` files:
   - Old DateTime string: `12/01/2027 00:00:00`
   - RFC1123 format: `Sun, 02 Jan 2028 00:00:00 GMT`
   - Any other culture-invariant DateTime format
-  
+
 When loading an older `.private` file with legacy date formats, the expiration date is automatically converted to the new ISO 8601 format when the keypair is next saved.
 
 ### License Attributes
