@@ -7,7 +7,7 @@
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" />
     <PackageVersion Include="System.CommandLine" Version="2.0.9" />
-    <PackageVersion Include="LicenseManager_12noon.Client" Version="3.0.0" />
+    <PackageVersion Include="LicenseManager_12noon.Client" Version="3.0.1" />
     <PackageVersion Include="Standard.Licensing" Version="1.2.2" />
   </ItemGroup>
 </Project>
