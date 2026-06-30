@@ -104,7 +104,9 @@ public class ApplicationInformation
 		}
 
 		// Fallback: entry assembly location filename (works in non-single-file publish).
+#pragma warning disable IL3000 // Assembly.Location always returns empty string for assemblies embedded in a single-file app.
 		string? assemblyLocation = Assembly.GetEntryAssembly()?.Location;
+#pragma warning restore IL3000
 		if (!string.IsNullOrWhiteSpace(assemblyLocation))
 		{
 			return Path.Combine(directory, Path.GetFileName(assemblyLocation));
