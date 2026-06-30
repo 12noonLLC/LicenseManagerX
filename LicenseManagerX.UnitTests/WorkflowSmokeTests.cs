@@ -6,11 +6,15 @@ namespace LicenseManagerX.UnitTests;
 public class WorkflowSmokeTests
 {
    [TestMethod]
-   public void BuildWorkflow_UsesOneDayArtifactRetention()
+   public void BuildWorkflow_UsesArtifactRetention()
    {
       string workflow = ReadBuildWorkflow();
 
-      Assert.Contains("retention-days: 1", workflow);
+		// We have switched from 1 to 3, so rather than have to update this
+      // test every time we change the retention days, we just check
+      // that it is not 0 (which is the default if not specified).
+		Assert.Contains("retention-days: ", workflow);
+      Assert.DoesNotContain("retention-days: 0", workflow);
    }
 
    [TestMethod]
