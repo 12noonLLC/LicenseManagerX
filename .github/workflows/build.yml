@@ -373,7 +373,7 @@ jobs:
           name: ${{ env.ARTIFACT_PACKAGE }}
           path: ${{ env.PUBLISH_FILES_PATH }}
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 3
 
   #
   # Production release must be on 'main' and the tag must begin with 'v'.
@@ -549,8 +549,10 @@ jobs:
 
     steps:
       # Delete publish artifact so it does not count against storage
+      # Skip deletion for release tag builds (v*) to preserve MSIX and NuGet packages
       # https://github.com/marketplace/actions/delete-artifact
       - name: ❌ Delete build artifact
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: GeekyEggo/delete-artifact@v6
         with:
           name: ${{ env.ARTIFACT_PACKAGE }}
