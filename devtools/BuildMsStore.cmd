@@ -168,11 +168,12 @@ if errorlevel 2 (
 )
 
 ::
-:: STEP 1: Build NuGet library and add to local source
+:: BUILD NUGET LIBRARY AND ADD TO LOCAL SOURCE
 ::
 
 echo.
 echo === CLEAN ARTIFACTS DIRECTORY ===
+
 if exist "%ARTIFACTS_PATH%" (
 	echo Deleting "%ARTIFACTS_PATH%"...
 	rmdir /s /q "%ARTIFACTS_PATH%"
@@ -186,16 +187,20 @@ set PUBLISH_RESTORE_ARGS=--runtime win-x64 --property:PublishProtocol=FileSystem
 
 echo.
 echo === DOTNET RESTORE (NuGet library) ===
+
 dotnet restore "%PROJECT_NUGET_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === DOTNET BUILD (NuGet library) ===
+
 dotnet build "%PROJECT_NUGET_PATH%" --configuration Release --no-restore
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 echo.
 echo === PACK (NuGet library) ===
+
+rmdir /s /q "%PUBLISH_FILES_PATH%"
 dotnet pack ^
 	"%PROJECT_NUGET_PATH%" ^
 	--configuration Release ^
@@ -207,14 +212,24 @@ dotnet pack ^
 	--output "%PUBLISH_FILES_PATH%"
 if errorlevel 1 exit /b %ERRORLEVEL%
 
+
+REM OPTIONAL:
+REM We could sign the NuGet package with our SSL.com cert.
+REM But that would require us to manually sign the package built
+REM by the GitHub Action before publishing it to NuGet.org.
+REM It is not worth the effort since we use NuGet Trusted Publishing.
+
+
 echo.
 echo === CLEAR STALE NUGET CACHE FOR LOCAL PACKAGE ===
+
 if exist "%USERPROFILE%\.nuget\packages\%PROJECT_NUGET_NAME%\%VERSION%" (
 	rmdir /s /q "%USERPROFILE%\.nuget\packages\%PROJECT_NUGET_NAME%\%VERSION%"
 )
 
 echo.
 echo === CREATE TEMP LOCAL NUGET SOURCE ===
+
 if exist "%LOCAL_NUGET_CONFIG_DIR%" rmdir /s /q "%LOCAL_NUGET_CONFIG_DIR%"
 mkdir "%LOCAL_NUGET_CONFIG_DIR%"
 if errorlevel 1 exit /b %ERRORLEVEL%
@@ -229,11 +244,12 @@ dotnet nuget add source ^
 if errorlevel 1 goto :CleanUpAndExit
 
 ::
-:: STEP 2: Restore (all projects, using local NuGet source)
+:: RESTORE (all projects, using local NuGet source)
 ::
 
 echo.
 echo === DOTNET RESTORE ===
+
 rem Restore NuGet project again with RID so that the app (which depends on its project) will build.
 dotnet restore "%PROJECT_NUGET_PATH%"   --configfile "%LOCAL_NUGET_CONFIG_PATH%" %PUBLISH_RESTORE_ARGS%
 if errorlevel 1 goto :CleanUpAndExit
@@ -247,11 +263,12 @@ dotnet restore "%PROJECT_EXAMPLE_PATH%" --configfile "%LOCAL_NUGET_CONFIG_PATH%"
 if errorlevel 1 goto :CleanUpAndExit
 
 ::
-:: STEP 3: Build
+:: BUILD
 ::
 
 echo.
 echo === DOTNET BUILD RELEASE ===
+
 dotnet build "%PROJECT_APP_PATH%"     --configuration Release --no-restore
 if errorlevel 1 goto :CleanUpAndExit
 dotnet build "%PROJECT_CONSOLE_PATH%" --configuration Release --no-restore
@@ -261,6 +278,7 @@ if errorlevel 1 goto :CleanUpAndExit
 
 echo.
 echo === VERIFY TARGET PROPERTIES ===
+
 if exist "%TARGET_EXE_PATH%" (
 	sigcheck.exe -nobanner "%TARGET_EXE_PATH%"
 ) else (
@@ -281,16 +299,18 @@ if exist "%TARGET_EXAMPLE_PATH%" (
 )
 
 ::
-:: STEP 4: Run tests
+:: RUN TESTS
 ::
 
 echo.
 echo === DOTNET BUILD UNIT TESTS ===
+
 dotnet build "%PROJECT_TESTS_PATH%" --configuration Release --no-restore
 if errorlevel 1 goto :CleanUpAndExit
 
 echo.
 echo === DOTNET TEST ===
+
 dotnet test ^
 	--project "%PROJECT_TESTS_PATH%" ^
 	--configuration Release ^
@@ -302,11 +322,12 @@ dotnet test ^
 if errorlevel 1 goto :CleanUpAndExit
 
 ::
-:: STEP 5: Publish
+:: PUBLISH
 ::
 
 echo.
 echo === DOTNET PUBLISH (Standalone) ===
+
 dotnet publish ^
 	"%PROJECT_APP_PATH%" ^
 	--configuration Release ^
@@ -355,6 +376,7 @@ popd
 
 echo.
 echo === DOTNET PUBLISH (MS Store) ===
+
 "%MSBUILD_EXE%" ^
 	"%PROJECT_WAP_PATH%" ^
 	-property:Configuration=Release ^
@@ -367,7 +389,7 @@ if errorlevel 1 goto :CleanUpAndExit
 echo Publish successful.
 
 ::
-:: STEP 6: Clean up local NuGet source
+:: CLEAN UP LOCAL NUGET SOURCE
 ::
 
 :CleanUpAndExit
