@@ -157,7 +157,7 @@ This information can be displayed by the licensed application.
 | Email | Email of the licensee |
 | Company | Company of the licensee (optional) |
 
-## Usage
+## Windows Application Usage
 
 ### Create a New License
 
@@ -197,7 +197,7 @@ prompt you for where to save the `.private` file.
 1. Press the _Save License..._ button to create a new license. This will
 prompt you for where to save the `.lic` file.
 
-### Command Line Interface
+## Command Line Interface
 
 The License Manager X application includes a built-in command-line interface. The same executable
 can run in both GUI mode (when launched without arguments) and CLI mode (when arguments are provided).
@@ -205,7 +205,7 @@ can run in both GUI mode (when launched without arguments) and CLI mode (when ar
 You can create a `.private` file using the GUI or the command-line interface.
 You can then use the command-line interface to generate new license files in a build script, *etc*.
 
-#### Usage
+### Usage
 
 `lmx` is the Windows app execution alias for License Manager X. You can manage this in Windows Settings.
 
@@ -215,31 +215,33 @@ lmx keypair <create|update|show> ...
 lmx license <create|update|show> ...
 ```
 
-#### Command Tree
+### Command Tree
 
-- `version` - Show version information.
-- `keypair create <keypair> ...` - Create a new `.private` file.
-- `keypair update <keypair> ...` - Update allowed properties in an existing `.private` file.
-- `keypair show <keypair>` - Display properties from a `.private` file.
-- `license create <keypair> --license <license> ...` - Create a new `.lic` file from a `.private` file.
-- `license update <keypair> --license <license> ...` - Update an existing `.lic` file using a `.private` file.
-- `license show <keypair> --license <license>` - Display properties from a `.lic` file.
+| Command | Description |
+|---------|-------------|
+| `version` | Show version information
+| `keypair create <keypair> ...` | Create a new `.private` file
+| `keypair update <keypair> ...` | Update allowed properties in an existing `.private` file
+| `keypair show <keypair>` | Display properties from a `.private` file
+| `license create <keypair> --license <license> ...` | Create a new `.lic` file from a `.private` file
+| `license update <keypair> --license <license> ...` | Update an existing `.lic` file using a `.private` file
+| `license show <keypair> --license <license>` | Display properties from a `.lic` file
 
-#### Shared Options
+### Shared Options
 
 These options are supported where applicable on `keypair create`, `keypair update`, `license create`, and `license update`:
 
 | Option | Description |
 |--------|-------------|
-| `--product-version, -pv <version>` | - Product version
-| `--product-publish-date, -pd <date>` | - Product publish date in `YYYY-MM-DD` format
-| `--product-features, -pf <key=value ...>` | - Product features as space-separated key=value pairs
-| `--type, -t <Standard|Trial>` | - License type
-| `--quantity, -q <number>` | - License quantity (positive integer)
-| `--expiration-days, -dy <days>` | - Expiration in days (`0` means no expiry)
-| `--expiration-date, -dt <date>` | - Expiration date in `YYYY-MM-DD` format
-| `--license-attributes, -la <key=value ...>` | - License attributes as space-separated key=value pairs
-| `--lock <path>` | - Lock the license to a specific existing file, such as an EXE or DLL
+| `--product-version, -pv <version>` | Product version
+| `--product-publish-date, -pd <date>` | Product publish date in `YYYY-MM-DD` format
+| `--product-features, -pf <key=value ...>` | Product features as space-separated key=value pairs
+| `--type, -t <Standard|Trial>` | License type
+| `--quantity, -q <number>` | License quantity (positive integer)
+| `--expiration-days, -dy <days>` | Expiration in days (`0` means no expiry)
+| `--expiration-date, -dt <date>` | Expiration date in `YYYY-MM-DD` format
+| `--license-attributes, -la <key=value ...>` | License attributes as space-separated key=value pairs
+| `--lock <path>` | Lock the license to a specific existing file, such as an EXE or DLL
 
 Note: `--expiration-days` and `--expiration-date` are mutually exclusive.
 
@@ -251,9 +253,15 @@ For `--product-features` and `--license-attributes`, use space-separated key=val
 - Values can be empty: `"Key="` or `Key`
 - Spaces in values are not supported (use quotes around individual pairs if needed)
 
-#### Keypair Commands
+### Reserved Names
 
-##### `keypair create <keypair>`
+Product features cannot use: `Product`, `Version`, `Publish Date`.
+
+License attributes cannot use: `Product Identity`, `Assembly Identity`, `Expiration Days`.
+
+### Keypair Commands
+
+#### `keypair create <keypair>`
 
 Creates a new `.private` file. The target keypair file must not already exist.
 
@@ -269,8 +277,11 @@ Required options:
 
 Optional options:
 
-- `--licensee-company <text>` - Licensee company.
-- Any of the shared options listed above.
+| Option | Description |
+|--------|-------------|
+| `--licensee-company <text>` | Licensee company
+
+Any of the shared options listed above.
 
 Example:
 
@@ -278,7 +289,7 @@ Example:
 > lmx keypair create my.private --passphrase "correct horse battery staple" --product-id MyProductId --product-name "My Product" --licensee-name "Jane User" --licensee-email jane@example.com --licensee-company Contoso --product-version 1.2.3
 ```
 
-##### `keypair update <keypair>`
+#### `keypair update <keypair>`
 
 Updates an existing `.private` file. The source keypair file must already exist.
 
@@ -302,19 +313,23 @@ Example:
 > lmx keypair update my.private --product-version 2.0.0 --product-publish-date 2025-06-15 --product-features Edition=Pro Seats=50
 ```
 
-##### `keypair show <keypair>`
+#### `keypair show <keypair>`
 
 Displays properties from an existing `.private` file. The source keypair file must already exist.
 
-#### License Commands
+### License Commands
 
-##### `license create <keypair> --license <license>`
+#### `license create <keypair> --license <license>`
 
 Creates a new `.lic` file from a `.private` file. The source keypair file must already exist.
 
+If the license file already exists, it will not be overwritten and an error will be displayed.
+
 Required options:
 
-- `--license <license>` - Path to the new `.lic` file.
+| Option | Description |
+|--------|-------------|
+| `--license <license>` | Path to the new `.lic` file
 
 Optional options:
 
@@ -326,23 +341,25 @@ Example:
 > lmx license create my.private --license my.lic --type Standard --quantity 100 --product-version 2.0.0
 ```
 
-##### `license update <keypair> --license <license>`
+#### `license update <keypair> --license <license>`
 
 Updates an existing `.lic` file using a `.private` file. The source keypair and license files must already exist.
 
 Required options:
 
-- `--license <license>` - Path to the existing `.lic` file.
+| Option | Description |
+|--------|-------------|
+| `--license <license>` | Path to the existing `.lic` file
 
 Optional options:
 
 - Any of the shared options listed above.
 
-##### `license show <keypair> --license <license>`
+#### `license show <keypair> --license <license>`
 
 Displays properties from an existing `.lic` file. The source keypair and license files must already exist.
 
-#### Security Notes
+### Security Notes
 
 The CLI **cannot** override these protected properties from the `.private` file:
 - Passphrase
@@ -350,19 +367,13 @@ The CLI **cannot** override these protected properties from the `.private` file:
 - Product name
 - Customer name, email, or company
 
-**Reserved Names:**
-- Product features cannot use: `Product`, `Version`, `Publish Date`
-- License attributes cannot use: `Product Identity`, `Assembly Identity`, `Expiration Days`
-
-If the license file already exists, it will not be overwritten and an error will be displayed.
-
-### The Licensed Application
+## The Licensed Application
 
 Install the `LicenseManager_12noon.Client` NuGet package in your application.
 
 The licensed application must pass the **Product ID** and the **Public Key** to the license validation API.
 
-```
+```csharp
 const string PRODUCT_ID = "My Product ID";	// Copied from the License Manager X application
 const string PUBLIC_KEY = "The Public Key";	// Copied from the License Manager X application
 LicenseFile license = new();
@@ -396,7 +407,7 @@ Then the application could use the hash as the _Product ID_.
 Of course, the licensee would have to keep that text as secret as they
 should keep the license file.
 
-### Example Application
+## Example Application
 
 The **LicenseManagerX_Example** project is an example application to demonstrate how to
 use the NuGet client library to validate a license and access the license's information.
