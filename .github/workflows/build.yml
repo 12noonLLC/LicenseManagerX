@@ -141,7 +141,7 @@ jobs:
 
       - &step_setup_dotnet
         name: 🛠️ Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           # The NuGet package supports .NET 8, 9, and 10.
           # setup-dotnet will handle installing all required SDKs.
