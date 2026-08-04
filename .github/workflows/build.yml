@@ -168,7 +168,9 @@ jobs:
       # packs so they're available when the publish step runs."
       - &step_restore_nuget
         name: 📦 Restore NuGet packages
+        shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path 'C:\VSIntermediate\NuGetPackagesLocal' | Out-Null
           dotnet restore "${{ env.PROJECT_NUGET_PATH }}"
           dotnet restore "${{ env.PROJECT_APP_PATH }}"     --runtime win-x64
           dotnet restore "${{ env.PROJECT_CONSOLE_PATH }}" --runtime win-x64
