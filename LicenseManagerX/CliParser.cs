@@ -402,10 +402,11 @@ internal class CustomHelpAction(HelpAction _defaultAction) : SynchronousCommandL
 	/// version and copyright information and additional examples.
 	/// </summary>
 	/// <remarks>
-	/// Because of this, we need to add new `HelpOption` objects to
-	/// the commands so that they do not also use this custom handler.
-	/// There is no need to also add `HelpOption` to leaf commands
-	/// because they will inherit the `HelpOption` from their parent command.
+	/// <c>HelpOption.Recursive</c> is set to <c>false</c> on the root's option so it does
+	/// not propagate into subcommand help output (which would cause duplicate entries).
+	/// Each intermediate command (<c>keypair</c>, <c>license</c>) has its own <see cref="HelpOption"/>
+	/// (Recursive = true by default) which leaf commands inherit. Because the root's HelpOption
+	/// is non-recursive, <see cref="CustomHelpAction"/> is only ever invoked at root level.
 	/// </remarks>
 	/// <param name="root"></param>
 	internal static void AttachCustomHelp(RootCommand root)
@@ -414,6 +415,9 @@ internal class CustomHelpAction(HelpAction _defaultAction) : SynchronousCommandL
 		{
 			if (option is HelpOption helpOption)
 			{
+				// Prevent this option from appearing in subcommand help output.
+				// Each subcommand has its own HelpOption.
+				helpOption.Recursive = false;
 				helpOption.Action = new CustomHelpAction((HelpAction)helpOption.Action!);
 				break;
 			}
