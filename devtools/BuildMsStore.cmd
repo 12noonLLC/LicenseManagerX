@@ -168,7 +168,7 @@ if errorlevel 2 (
 )
 
 ::
-:: BUILD NUGET LIBRARY AND ADD TO LOCAL SOURCE
+:: CLEAN
 ::
 
 echo.
@@ -182,6 +182,10 @@ if exist "%ARTIFACTS_PATH%" (
 		exit /b %ERRORLEVEL%
 	)
 )
+
+::
+:: BUILD NUGET LIBRARY AND ADD TO LOCAL SOURCE
+::
 
 set PUBLISH_RESTORE_ARGS=--runtime win-x64 --property:PublishProtocol=FileSystem --property:SelfContained=false --property:PublishReadyToRun=false --property:PublishTrimmed=false --property:PublishSingleFile=true
 

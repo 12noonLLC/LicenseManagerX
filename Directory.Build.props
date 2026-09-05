@@ -5,7 +5,7 @@
 		<Product>License Manager X</Product>
 		<Description>License Manager X is a Windows application designed to create and manage licenses for software applications using .NET 8, 9, or 10. It leverages the Standard.Licensing project to handle license generation and validation.</Description>
 
-		<Authors>Stefan K.S. Tucker</Authors>
+		<Authors>12noon LLC</Authors>
 		<Company>12noon LLC</Company>
 		<Year>$([System.DateTime]::UtcNow.Year)</Year>
 		<Copyright>© 2024-$(Year) 12noon LLC</Copyright>

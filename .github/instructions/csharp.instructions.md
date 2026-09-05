@@ -1,7 +1,6 @@
 ---
-description: "Guidelines for building C# applications"
-applyTo:
-  - "**/*.cs"
+description: 'Guidelines for building C# applications'
+applyTo: '**/*.cs'
 ---
 
 # C# Development
@@ -26,7 +25,7 @@ applyTo:
 
 - Apply code-formatting style defined in `.editorconfig`.
 - Prefer file-scoped namespace declarations and single-line using directives.
-- Place opening curly braces on their own line for any code block (Allman-style brace placement; e.g., after `if`, `for`, `while`, `foreach`, `using`, `try`, etc.).
+- Insert a newline before the opening curly brace of any code block (e.g., after `if`, `for`, `while`, `foreach`, `using`, `try`, etc.).
 - Ensure that the final return statement of a method is on its own line.
 - Use pattern matching and switch expressions wherever possible.
 - Use `nameof` instead of string literals when referring to member names.
@@ -68,7 +67,7 @@ applyTo:
 - Explain the validation pipeline and how to customize validation responses.
 - Demonstrate a global exception handling strategy using middleware.
 - Show how to create consistent error responses across the API.
-- Explain problem details (RFC 7807) implementation for standardized error responses.
+- Explain problem details (RFC 9457) implementation for standardized error responses.
 
 ## API Versioning and Documentation
 
