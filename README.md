@@ -21,22 +21,23 @@ providing a robust mechanism for software protection.
 For this repository, the `.private` file inside `LicenseManagerX_Example` is intentionally included as an inspectable example only.
 Do not treat that as a general practice for real applications.
 
-**License Manager X** is a graphical front-end application designed to create and manage
+**License Manager X** is a Windows application that creates and manages
 licenses for software applications using .NET.
+
 It leverages the [Standard.Licensing](https://github.com/junian/Standard.Licensing)
 project to handle license generation and validation.
 
-In addition to this Windows application, License Manager X can also be used
+In addition to the graphical Windows application, License Manager X can also be used
 from a command line to support scripting, etc.
 
 > #### **BREAKING CHANGE**
 > Version 3.0.0 completely changes the command-line switches to a command tree design. See below for details.
 
 Your application will need to use either:
-- the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client) NuGet package, which has an improved API to validate licenses for your .NET application.
+- the [LicenseManager_12noon.Client](https://nuget.org/packages/LicenseManager_12noon.Client) NuGet package, which has an enhanced API to validate licenses for your .NET application.
 - the original **Standard.Licensing** NuGet package on which it is based.
 
-You can change which package you use at any time--you are not locked in to one or the other.
+You can change which NuGet package you use at any time--you are not locked in to one or the other.
 
 Download the License Manager X application from the Microsoft Store.
 
