@@ -5,6 +5,9 @@
 *.userosscache
 *.sln.docstates
 
+# Git
+.github/skills/app-store-screenshots/
+
 # Build artifacts
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -17,10 +20,6 @@ x86/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
-
-# Files built by Visual Studio
-*.pdb
-*.log
 
 # NuGet Packages
 *.nupkg
@@ -50,5 +49,4 @@ artifacts/
 #
 LicenseManager_12noon.Package/Package.StoreAssociation.xml
 LicenseManager_12noon.Package/Screenshots/
-STORE/
 devtools/*.zip

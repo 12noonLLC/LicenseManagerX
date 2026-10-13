@@ -1,0 +1,1068 @@
+{
+  "schemaVersion": 2,
+  "appName": "License Manager X",
+  "themeId": "steadfast",
+  "fontId": "system-sans",
+  "connectedCanvas": false,
+  "locales": [
+    "en"
+  ],
+  "locale": "en",
+  "device": "windows-desktop",
+  "orientation": "portrait",
+  "appIcon": "/app-icon.png",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "s_mutfdky3_0",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Sell one\nidea per slide."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_1",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Your headline\nlives here."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_2",
+        "layout": "two-devices",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Show two\nscreens at once."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mutfdky3_3",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Flip the contrast\nfor visual rhythm."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mutfdky3_4",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "android": [
+      {
+        "id": "s_mutfdky3_5",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Sell one\nidea per slide."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_6",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Your headline\nlives here."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_7",
+        "layout": "two-devices",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Show two\nscreens at once."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mutfdky3_8",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Flip the contrast\nfor visual rhythm."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mutfdky3_9",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "ipad": [
+      {
+        "id": "s_mutfdky3_a",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe big screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_b",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Built for\nfocus."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_c",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Always within reach."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "tvos": [
+      {
+        "id": "s_mutfdky3_d",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe living room."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_e",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_f",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Flip the contrast."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mutfdky3_g",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "watchos": [
+      {
+        "id": "s_mutfdky3_h",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "On your\nwrist."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_i",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One glance.\nDone."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_j",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Always\nwith you."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "carplay": [
+      {
+        "id": "s_mutfdky3_k",
+        "layout": "split-landscape",
+        "label": {
+          "en": "CARPLAY"
+        },
+        "headline": {
+          "en": "Eyes on\nthe road."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_l",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Everything, one tap away."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_m",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Made for every drive."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "mac": [
+      {
+        "id": "s_mutfdky3_n",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nyour Mac."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_o",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Everything in\none window."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_p",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "One shortcut away."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mutfdky3_q",
+        "layout": "two-devices",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Work across windows."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mutfdky3_r",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "android-7": [
+      {
+        "id": "s_mutfdky3_s",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Pocket-sized\npower."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_t",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Wide canvas,\nbigger ideas."
+        },
+        "screenshot": ""
+      }
+    ],
+    "android-10": [
+      {
+        "id": "s_mutfdky3_u",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe big screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mutfdky3_v",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Wide canvas,\nbigger ideas."
+        },
+        "screenshot": ""
+      }
+    ],
+    "windows-desktop": [
+      {
+        "id": "01-create",
+        "layout": "split-landscape",
+        "label": {
+          "en": "LICENSE MANAGER X / FOR SOFTWARE DEVELOPERS"
+        },
+        "headline": {
+          "en": "Your software."
+        },
+        "screenshot": "/screenshots/windows/en/screenshot-02.png",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 310,
+            "width": 1500,
+            "height": 370,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1640,
+            "y": 430,
+            "width": 2060,
+            "height": 1287.5,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "textElements": [
+          {
+            "id": "payoff",
+            "text": {
+              "en": "Your license."
+            },
+            "transform": {
+              "x": 220,
+              "y": 620,
+              "width": 1450,
+              "height": 300,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 208,
+            "fontWeight": 700,
+            "color": "#b2d6ef",
+            "align": "left"
+          },
+          {
+            "id": "subline",
+            "text": {
+              "en": "Create license files\nfor the apps you ship."
+            },
+            "transform": {
+              "x": 232,
+              "y": 1050,
+              "width": 1320,
+              "height": 240,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 82,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "format",
+            "text": {
+              "en": "WINDOWS  /  SIGNED XML LICENSES"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1530,
+              "width": 1390,
+              "height": 80,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 48,
+            "fontWeight": 600,
+            "color": "#b2d6ef",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "02-sign",
+        "layout": "no-device",
+        "label": {
+          "en": "PUBLIC / PRIVATE KEY SIGNING"
+        },
+        "headline": {
+          "en": "Signed.\nNot just saved."
+        },
+        "screenshot": "",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 250,
+            "width": 2900,
+            "height": 640,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        },
+        "textElements": [
+          {
+            "id": "subline",
+            "text": {
+              "en": "Create with your private key. Validate with your public key."
+            },
+            "transform": {
+              "x": 232,
+              "y": 880,
+              "width": 3270,
+              "height": 150,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 76,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "private",
+            "text": {
+              "en": ".private"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1390,
+              "width": 1000,
+              "height": 180,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 142,
+            "fontWeight": 700,
+            "color": "#b2d6ef",
+            "align": "left"
+          },
+          {
+            "id": "private-note",
+            "text": {
+              "en": "Keep the keypair safe."
+            },
+            "transform": {
+              "x": 232,
+              "y": 1630,
+              "width": 1000,
+              "height": 100,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 58,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "signed",
+            "text": {
+              "en": ".lic"
+            },
+            "transform": {
+              "x": 1540,
+              "y": 1390,
+              "width": 700,
+              "height": 180,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 142,
+            "fontWeight": 700,
+            "color": "#edf3fa",
+            "align": "left"
+          },
+          {
+            "id": "signed-note",
+            "text": {
+              "en": "Send the signed license."
+            },
+            "transform": {
+              "x": 1540,
+              "y": 1630,
+              "width": 1050,
+              "height": 100,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 58,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "validate",
+            "text": {
+              "en": "Your app"
+            },
+            "transform": {
+              "x": 2810,
+              "y": 1390,
+              "width": 850,
+              "height": 180,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 142,
+            "fontWeight": 700,
+            "color": "#b2d6ef",
+            "align": "left"
+          },
+          {
+            "id": "validate-note",
+            "text": {
+              "en": "Check the signature."
+            },
+            "transform": {
+              "x": 2810,
+              "y": 1630,
+              "width": 860,
+              "height": 100,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 58,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "flow-one",
+            "text": {
+              "en": ">"
+            },
+            "transform": {
+              "x": 1280,
+              "y": 1420,
+              "width": 160,
+              "height": 150,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 112,
+            "fontWeight": 500,
+            "color": "#9bacc0",
+            "align": "left"
+          },
+          {
+            "id": "flow-two",
+            "text": {
+              "en": ">"
+            },
+            "transform": {
+              "x": 2540,
+              "y": 1420,
+              "width": 160,
+              "height": 150,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 112,
+            "fontWeight": 500,
+            "color": "#9bacc0",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "03-terms",
+        "layout": "split-landscape",
+        "inverted": true,
+        "label": {
+          "en": "TRIAL / STANDARD / EXPIRATION"
+        },
+        "headline": {
+          "en": "Set clear\nlicense terms."
+        },
+        "screenshot": "/screenshots/windows/en/screenshot-02.png",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 270,
+            "width": 1710,
+            "height": 660,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 2210,
+            "y": 360,
+            "width": 1410,
+            "height": 881.25,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "imageElements": [
+          {
+            "id": "terms-detail",
+            "src": "/screenshots/windows/en/terms.png",
+            "transform": {
+              "x": 220,
+              "y": 1190,
+              "width": 1870,
+              "height": 355,
+              "rotation": 0,
+              "zIndex": 2
+            },
+            "fit": "contain"
+          }
+        ],
+        "textElements": [
+          {
+            "id": "subline",
+            "text": {
+              "en": "Choose the type.\nSet the expiry date."
+            },
+            "transform": {
+              "x": 232,
+              "y": 960,
+              "width": 1590,
+              "height": 210,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 80,
+            "fontWeight": 400,
+            "color": "#344b63",
+            "align": "left"
+          },
+          {
+            "id": "detail-label",
+            "text": {
+              "en": "ACTUAL LICENSE SETTINGS"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1660,
+              "width": 1870,
+              "height": 80,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 48,
+            "fontWeight": 600,
+            "color": "#244e70",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "04-features",
+        "layout": "hero",
+        "label": {
+          "en": "CUSTOM PRODUCT FEATURES"
+        },
+        "headline": {
+          "en": "Define each\nproduct feature."
+        },
+        "screenshot": "/screenshots/windows/en/screenshot-02.png",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 260,
+            "width": 2120,
+            "height": 630,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 210,
+            "y": 960,
+            "width": 1800,
+            "height": 1125,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "imageElements": [
+          {
+            "id": "features-detail",
+            "src": "/screenshots/windows/en/features.png",
+            "transform": {
+              "x": 2650,
+              "y": 500,
+              "width": 960,
+              "height": 718,
+              "rotation": 0,
+              "zIndex": 2
+            },
+            "fit": "contain"
+          }
+        ],
+        "textElements": [
+          {
+            "id": "subline",
+            "text": {
+              "en": "Store key=value features\nfor your app to enforce."
+            },
+            "transform": {
+              "x": 2300,
+              "y": 1330,
+              "width": 1310,
+              "height": 240,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 80,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "detail-label",
+            "text": {
+              "en": "YOUR FEATURES. YOUR RULES."
+            },
+            "transform": {
+              "x": 2300,
+              "y": 1690,
+              "width": 1360,
+              "height": 90,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 48,
+            "fontWeight": 600,
+            "color": "#b2d6ef",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "05-update",
+        "layout": "split-landscape",
+        "inverted": true,
+        "label": {
+          "en": "LOAD / EDIT / SAVE"
+        },
+        "headline": {
+          "en": "Keep licenses\nup to date."
+        },
+        "screenshot": "/screenshots/windows/en/screenshot-01.png",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 290,
+            "width": 1590,
+            "height": 660,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1730,
+            "y": 450,
+            "width": 1940,
+            "height": 1212.5,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "textElements": [
+          {
+            "id": "subline",
+            "text": {
+              "en": "Load your saved files.\nChange the terms.\nIssue a new license."
+            },
+            "transform": {
+              "x": 232,
+              "y": 1040,
+              "width": 1340,
+              "height": 350,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 80,
+            "fontWeight": 400,
+            "color": "#344b63",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "06-cli",
+        "layout": "hero",
+        "label": {
+          "en": "COMMAND-LINE WORKFLOW"
+        },
+        "headline": {
+          "en": "Script your\nlicense workflow."
+        },
+        "screenshot": "/screenshots/windows/en/commands.png",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 270,
+            "width": 2190,
+            "height": 630,
+            "rotation": 0,
+            "zIndex": 4
+          },
+          "device": {
+            "x": 1900,
+            "y": 950,
+            "width": 1750,
+            "height": 1093.75,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "textElements": [
+          {
+            "id": "subline",
+            "text": {
+              "en": "Create or update licenses\nfrom your own scripts."
+            },
+            "transform": {
+              "x": 232,
+              "y": 1100,
+              "width": 1420,
+              "height": 250,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 80,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "command",
+            "text": {
+              "en": "> lmx license create"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1560,
+              "width": 1530,
+              "height": 110,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 82,
+            "fontWeight": 600,
+            "color": "#b2d6ef",
+            "align": "left"
+          }
+        ]
+      },
+      {
+        "id": "07-validate",
+        "layout": "no-device",
+        "label": {
+          "en": "FROM YOUR DESKTOP TO YOUR CUSTOMER'S APP"
+        },
+        "headline": {
+          "en": "Create. Sign."
+        },
+        "screenshot": "",
+        "transforms": {
+          "caption": {
+            "x": 220,
+            "y": 270,
+            "width": 2500,
+            "height": 390,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        },
+        "textElements": [
+          {
+            "id": "payoff",
+            "text": {
+              "en": "Validate."
+            },
+            "transform": {
+              "x": 220,
+              "y": 670,
+              "width": 2900,
+              "height": 370,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 300,
+            "fontWeight": 700,
+            "color": "#b2d6ef",
+            "align": "left"
+          },
+          {
+            "id": "library",
+            "text": {
+              "en": "LicenseManager_12noon.Client"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1160,
+              "width": 3330,
+              "height": 150,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 112,
+            "fontWeight": 600,
+            "color": "#edf3fa",
+            "align": "left"
+          },
+          {
+            "id": "subline",
+            "text": {
+              "en": "Use our NuGet library or Standard.Licensing to validate the license.\nYour app enforces the customer's terms."
+            },
+            "transform": {
+              "x": 232,
+              "y": 1390,
+              "width": 3330,
+              "height": 250,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 80,
+            "fontWeight": 400,
+            "color": "#c3d0df",
+            "align": "left"
+          },
+          {
+            "id": "features",
+            "text": {
+              "en": "SIGNATURES     EXPIRY     PRODUCT ID     CUSTOM FEATURES"
+            },
+            "transform": {
+              "x": 232,
+              "y": 1810,
+              "width": 3370,
+              "height": 110,
+              "rotation": 0,
+              "zIndex": 4
+            },
+            "fontSize": 52,
+            "fontWeight": 600,
+            "color": "#b2d6ef",
+            "align": "left"
+          }
+        ]
+      }
+    ],
+    "feature-graphic": [
+      {
+        "id": "s_mutfdky3_x",
+        "layout": "feature-graphic",
+        "label": {},
+        "headline": {
+          "en": "Your tagline goes here."
+        },
+        "screenshot": ""
+      }
+    ]
+  },
+  "scene": {
+    "backdrop": "gradient",
+    "span": false,
+    "decoration": "none",
+    "shadow": 75,
+    "glow": 14,
+    "tilt": 0,
+    "headlineWeight": 700,
+    "headlineScale": 1.05,
+    "headlineCase": "as-typed",
+    "captionAlign": "left"
+  }
+}
