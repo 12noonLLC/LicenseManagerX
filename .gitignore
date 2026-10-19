@@ -50,3 +50,19 @@ artifacts/
 LicenseManager_12noon.Package/Package.StoreAssociation.xml
 LicenseManager_12noon.Package/Screenshots/
 devtools/*.zip
+
+STORE/screenshot-exports/
+STORE/screenshot-studio/
+
+STORE/Volcano padlock.jpg
+STORE/Generic padlock.jpg
+STORE/LicenseManagerX-hero-4K.png
+STORE/LicenseManagerX-hero-1672x941.png
+STORE/Padlock over window 50x50.png
+STORE/Padlock over window 300x300.png
+STORE/Padlock over window 1080x1080.png
+STORE/Padlock over window.jpg
+STORE/screenshot-01.png
+STORE/screenshot-02.png
+STORE/screenshot-03.png
+STORE/Volcano padlock 720x1080.png
