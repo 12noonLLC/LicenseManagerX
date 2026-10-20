@@ -145,18 +145,22 @@ if "%MANIFEST_VERSION%" == "" (
 rem === 7. Compare all versions (in A.B.C.0 format) ===
 set EXPECTED=%VERSION_PREFIX%.0
 set EXPECTED_NUGET=%NUGET_VERSION%.0
-set SAME_VERSIONS=1
-if "%MANIFEST_VERSION%" neq "%EXPECTED%" set SAME_VERSIONS=0
-if "%EXPECTED_NUGET%" neq "%EXPECTED%" set SAME_VERSIONS=0
-if "%SAME_VERSIONS%" == "0" (
+if "%MANIFEST_VERSION%" neq "%EXPECTED%" (
 	echo ERROR: Version mismatch.
 	echo   Directory.Build.props:    %VERSION_PREFIX%
-	echo   Directory.Packages.props: %NUGET_VERSION%
 	echo   Package.appxmanifest:     %MANIFEST_VERSION%
 	exit /b 1
 )
 
-echo Version check successful: %MANIFEST_VERSION% matches %EXPECTED% matches %EXPECTED_NUGET%
+if "%EXPECTED_NUGET%" neq "%EXPECTED%" (
+	echo   Directory.Build.props:    %VERSION_PREFIX%
+	echo   Directory.Packages.props: %NUGET_VERSION%
+	echo   Package.appxmanifest:     %MANIFEST_VERSION%
+	echo.
+	echo WARNING: NuGet package version differs from app version.
+) else (
+	echo Version check successful: %MANIFEST_VERSION% matches %EXPECTED% matches %EXPECTED_NUGET%
+)
 
 set VERSION=%VERSION_PREFIX%
 

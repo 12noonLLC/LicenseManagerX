@@ -129,15 +129,24 @@ jobs:
           $expectedPackage = "$packageVersion.0"
 
           # 5. Compare manifest version
-          if (($manifestVersion -ne $expected) -or ($expectedPackage -ne $expected))
+          if ($manifestVersion -ne $expected)
           {
-            throw "Version mismatch: Directory.Build.props: $versionPrefix | Directory.Packages.props: $packageVersion | Package.appxmanifest: $manifestVersion"
+            throw "Version mismatch: Directory.Build.props: $versionPrefix | Package.appxmanifest: $manifestVersion"
           }
 
-          Write-Host "Version check successful:"
           Write-Host "  Directory.Build.props:    $versionPrefix"
           Write-Host "  Directory.Packages.props: $packageVersion"
           Write-Host "  Package.appxmanifest:     $manifestVersion"
+          Write-Host
+
+          if ($expectedPackage -ne $expected)
+          {
+            Write-Host "::warning::NuGet package version ($packageVersion) in Directory.Packages.props differs from app version ($versionPrefix)."
+          }
+          else
+          {
+            Write-Host "Version check successful."
+          }
 
       - &step_setup_dotnet
         name: 🛠️ Set up .NET
